@@ -13,8 +13,8 @@ import (
 
 func unsreefy(in string) string {
 	replace := map[string]string{
-		"Sremium": "Premium",
-		"sremium": "premium",
+		"Sreemium": "Premium",
+		"sreemium": "premium",
 		"Sreet":   "Leet",
 		"sreet":   "leet",
 	}
