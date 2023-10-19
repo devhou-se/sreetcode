@@ -1,0 +1,37 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - main
+    pull_request:
+
+jobs:
+  setup-build-publish-deploy:
+    name: Setup, Build, Publish, and Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v0.3
+        with:
+            project_id: baileybutler-syd
+            service_account_key: ${{ secrets.GCP_SA_KEY }}
+            export_default_credentials: true
+
+      - name: Configure Docker
+        run: |
+          gcloud --quiet auth configure-docker
+
+      - name: Build and Push Docker Image
+        run: |
+          docker build -t gcr.io/baileybutler-syd/sreetcode:${{ github.sha }} .
+          docker push gcr.io/baileybutler-syd/sreetcode:${{ github.sha }}
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy sreetcode --image=gcr.io/baileybutler-syd/sreetcode:${{ github.sha }}
+          # Make sure to update the region, and other settings like allowing unauthenticated requests or setting environment variables, according to your application's requirements.
