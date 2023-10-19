@@ -57,8 +57,6 @@ func main() {
 	c := http.Client{}
 
 	r.HandleFunc("/*", func(w http.ResponseWriter, r *http.Request) {
-		//r.Host = u.Host
-
 		u2 := r.URL
 		u2.Scheme = u.Scheme
 		u2.Host = u.Host
