@@ -33,6 +33,9 @@ jobs:
           docker push gcr.io/baileybutler-syd/sreekipedia:${{ github.sha }}
 
       - name: Deploy to Cloud Run
-        run: |
-          gcloud run deploy sreekipedia --image=gcr.io/baileybutler-syd/sreekipedia:${{ github.sha }} --platform managed --region asia-southeast1 --allow-unauthenticated
-          # Make sure to update the region, and other settings like allowing unauthenticated requests or setting environment variables, according to your application's requirements.
+        uses: google-github-actions/deploy-cloudrun@v1
+        with:
+          service: sreekipedia
+          image: gcr.io/baileybutler-syd/sreekipedia:${{ github.sha }}
+          region: asia-southeast1
+          flags: "--min-instances=1 --max-instances=100 --allow-unauthenticated"
