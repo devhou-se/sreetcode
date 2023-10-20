@@ -37,5 +37,5 @@ jobs:
 
       - name: Deploy to Cloud Run
         run: |
-          gcloud run deploy sreetcode --image=gcr.io/baileybutler-syd/sreetcode:${{ github.sha }}
+          gcloud run deploy sreetcode --image=gcr.io/baileybutler-syd/sreetcode:${{ github.sha }} --platform managed --region asia-southeast1 --allow-unauthenticated
           # Make sure to update the region, and other settings like allowing unauthenticated requests or setting environment variables, according to your application's requirements.
