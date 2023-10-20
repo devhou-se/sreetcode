@@ -1,0 +1,40 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  setup-build-publish-deploy:
+    name: Setup, Build, Publish, and Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Authorise GCP
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.SA_JSON }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v0.3
+
+      - name: Configure Docker
+        run: |
+          gcloud --quiet auth configure-docker
+
+      - name: Build and Push Docker Image
+        run: |
+          docker build -t gcr.io/baileybutler-syd/sreekipedia:${{ github.sha }} .
+          docker push gcr.io/baileybutler-syd/sreekipedia:${{ github.sha }}
+
+      - name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v1
+        with:
+          service: sreekipedia
+          image: gcr.io/baileybutler-syd/sreekipedia:${{ github.sha }}
+          region: asia-southeast1
+          flags: "--min-instances=1 --max-instances=100 --allow-unauthenticated"
