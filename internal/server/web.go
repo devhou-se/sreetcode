@@ -134,7 +134,8 @@ func NewWebServer(u string) (*http.Server, error) {
 
 	// Set up routes for specific assets to be replaced.
 	mappings := map[string]string{
-		// ... existing mappings ...
+		"/static/images/mobile/copyright/sreekipedia-wordmark-en.svg": "sreekipedia.org/sreekipedia-wordmark-en.svg",
+		"/static/images/mobile/copyright/sreekipedia-tagline-en.svg":  "sreekipedia.org/tagling.svg",
 	}
 	for requestedAsset, replacementAsset := range mappings {
 		router.HandleFunc(requestedAsset, ReplacedAssetHandler(replacementAsset))
