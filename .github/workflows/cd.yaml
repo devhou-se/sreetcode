@@ -29,10 +29,10 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
-          docker build -t gcr.io/baileybutler-syd/sreetcode:${{ github.sha }} .
-          docker push gcr.io/baileybutler-syd/sreetcode:${{ github.sha }}
+          docker build -t gcr.io/baileybutler-syd/sreekipedia:${{ github.sha }} .
+          docker push gcr.io/baileybutler-syd/sreekipedia:${{ github.sha }}
 
       - name: Deploy to Cloud Run
         run: |
-          gcloud run deploy sreetcode --image=gcr.io/baileybutler-syd/sreetcode:${{ github.sha }} --platform managed --region asia-southeast1 --allow-unauthenticated
+          gcloud run deploy sreekipedia --image=gcr.io/baileybutler-syd/sreekipedia:${{ github.sha }} --platform managed --region asia-southeast1 --allow-unauthenticated
           # Make sure to update the region, and other settings like allowing unauthenticated requests or setting environment variables, according to your application's requirements.
