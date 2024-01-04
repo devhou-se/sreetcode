@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/hostrouter"
 
 	"github.com/devhou-se/sreetcode/internal/util"
 )
@@ -29,14 +31,14 @@ func proxyRequest(client *http.Client, targetURL *url.URL, w http.ResponseWriter
 	req, err := http.NewRequest(r.Method, proxiedURL.String(), r.Body)
 	if err != nil {
 		http.Error(w, "Error creating request", http.StatusInternalServerError)
-		return
+		log.Printf("Error creating request: %s\n", err)
 	}
 
 	// Send the request using the provided HTTP client and get the response.
 	resp, err := client.Do(req)
 	if err != nil {
 		http.Error(w, "Error making request", http.StatusInternalServerError)
-		return
+		log.Printf("Error making request: %s\n", err)
 	}
 	defer resp.Body.Close()
 
@@ -56,6 +58,7 @@ func proxyRequest(client *http.Client, targetURL *url.URL, w http.ResponseWriter
 
 	// Modify the response body text and write it to the original response writer.
 	modifiedBody := util.Sreefy(string(body))
+	modifiedBody = util.UpdateURLs(modifiedBody)
 	w.WriteHeader(resp.StatusCode)
 	w.Write([]byte(modifiedBody))
 }
@@ -113,13 +116,7 @@ func middlewareFunc(next http.Handler) http.Handler {
 	})
 }
 
-// NewWebServer initializes a new web server with predefined routes and handlers.
-func NewWebServer(u string) (*http.Server, error) {
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
-
+func newRouter(u string) *chi.Mux {
 	router := chi.NewRouter()
 
 	router.Use(middlewareFunc)
@@ -127,15 +124,26 @@ func NewWebServer(u string) (*http.Server, error) {
 	// Define the target URL for the proxy.
 	targetURL, err := url.Parse(u)
 	if err != nil {
-		return nil, err
+		return nil
 	}
 
 	httpClient := &http.Client{}
+
+	for original, replaced := range util.URLMappings {
+		originalUrl, _ := url.Parse(original)
+		router.Handle(fmt.Sprintf("%s*", replaced), http.StripPrefix(replaced, ProxyHandler(httpClient, originalUrl)))
+	}
+
+	router.HandleFunc("/news/*", func(w http.ResponseWriter, r *http.Request) {
+		newsUrl, _ := url.Parse("https://en.wikinews.org/")
+		http.StripPrefix("/news/", ProxyHandler(httpClient, newsUrl)).ServeHTTP(w, r)
+	})
 
 	// Set up routes for specific assets to be replaced.
 	mappings := map[string]string{
 		"/static/images/mobile/copyright/sreekipedia-wordmark-en.svg": "sreekipedia.org/sreekipedia-wordmark-en.svg",
 		"/static/images/mobile/copyright/sreekipedia-tagline-en.svg":  "sreekipedia.org/tagling.svg",
+		"/static/favicon/sreekipedia.ico":                             "sreekipedia.org/sreeki.ico",
 	}
 	for requestedAsset, replacementAsset := range mappings {
 		router.HandleFunc(requestedAsset, ReplacedAssetHandler(replacementAsset))
@@ -144,17 +152,36 @@ func NewWebServer(u string) (*http.Server, error) {
 	// Handle all other requests with the proxy.
 	router.HandleFunc("/*", ProxyHandler(httpClient, targetURL))
 
+	return router
+}
+
+func sreekipediaRouter() *chi.Mux {
+	return newRouter("https://en.wikipedia.org")
+}
+
+func mobileSreekipediaRouter() *chi.Mux {
+	return newRouter("https://en.m.wikipedia.org")
+}
+
+// NewWebServer initializes a new web server with predefined routes and handlers.
+func NewWebServer() (*http.Server, error) {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	router := chi.NewRouter()
+	hr := hostrouter.New()
+
+	hr.Map("en.m.sreekipedia.org", mobileSreekipediaRouter())
+	hr.Map("en.sreekipedia.org", sreekipediaRouter())
+
+	router.Mount("/", hr)
+
 	// Set up and return the HTTP server.
 	server := &http.Server{
 		Addr:    ":" + port,
 		Handler: router,
 	}
 	return server, nil
-}
-
-// StartServer starts the server and log any error if occurs.
-func StartServer(server *http.Server) {
-	if err := server.ListenAndServe(); err != nil {
-		log.Fatalf("Error starting server: %s\n", err)
-	}
 }

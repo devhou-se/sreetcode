@@ -5,6 +5,7 @@ go 1.21
 require (
 	cloud.google.com/go/storage v1.33.0
 	github.com/go-chi/chi/v5 v5.0.10
+	github.com/go-chi/hostrouter v0.2.0
 )
 
 require (

@@ -5,9 +5,7 @@ import (
 )
 
 func main() {
-	u := "https://en.wikipedia.org"
-
-	s, err := server.NewWebServer(u)
+	s, err := server.NewWebServer()
 	if err != nil {
 		panic(err)
 	}

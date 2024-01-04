@@ -17,6 +17,13 @@ var wordReplacements = map[string]string{
 	"Media":             "Sreedia",
 }
 
+var URLMappings = map[string]string{
+	"https://en.sreekinews.org/":    "/news/",
+	"https://en.sreekiquote.org/":   "/quote/",
+	"https://en.sreekiversity.org/": "/sreekiversity/",
+	"https://en.wiktionary.org/":    "/dict/",
+}
+
 // Unsreefy reverses the replacements made by the Sreefy function, restoring the original words.
 func Unsreefy(input string) string {
 	// Replace each occurrence of the 'value' with its corresponding 'key'.
@@ -60,4 +67,12 @@ func Sreefy(input string) string {
 	}
 
 	return input
+}
+
+func UpdateURLs(body string) string {
+	for original, replaced := range URLMappings {
+		body = strings.ReplaceAll(body, original, replaced)
+	}
+
+	return body
 }
