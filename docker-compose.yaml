@@ -1,0 +1,11 @@
+services:
+  sreeifier:
+    build: ./python
+    environment:
+      - PORT=50051
+    ports:
+        - 50051:50051
+  proxy:
+    build: .
+    ports:
+      - 8080:8080

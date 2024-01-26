@@ -1,11 +1,11 @@
 package main
 
 import (
-	"github.com/devhou-se/sreetcode/internal/server"
+	"github.com/devhou-se/sreetcode/internal/service"
 )
 
 func main() {
-	s, err := server.NewWebServer()
+	s, err := service.NewWebServer()
 	if err != nil {
 		panic(err)
 	}

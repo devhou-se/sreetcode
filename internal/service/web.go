@@ -1,4 +1,4 @@
-package server
+package service
 
 import (
 	"context"
@@ -13,8 +13,14 @@ import (
 	"cloud.google.com/go/storage"
 	"github.com/go-chi/chi/v5"
 
+	"github.com/devhou-se/sreetcode/internal/integration/sreeify"
 	"github.com/devhou-se/sreetcode/internal/util"
 )
+
+type Server struct {
+	*http.Server
+	sreeify *sreeify.Client
+}
 
 // urlMapper is a function that maps a URL to another URL.
 func urlMapper(f func(string) (*url.URL, bool)) func(string) (*url.URL, bool) {
@@ -43,7 +49,7 @@ func urlMapper(f func(string) (*url.URL, bool)) func(string) (*url.URL, bool) {
 }
 
 // proxyRequest forwards the request to the target URL and writes back the response.
-func proxyRequest(client *http.Client, targetURL *url.URL, w http.ResponseWriter, r *http.Request) {
+func (s *Server) proxyRequest(client *http.Client, targetURL *url.URL, w http.ResponseWriter, r *http.Request) {
 	// Modify request URL.
 	proxiedURL, err := url.Parse(util.Unsreefy(r.URL.String()))
 	if err != nil {
@@ -84,16 +90,18 @@ func proxyRequest(client *http.Client, targetURL *url.URL, w http.ResponseWriter
 	}
 
 	// Modify the response body text and write it to the original response writer.
-	modifiedBody := util.Sreefy(string(body))
-	modifiedBody = util.UpdateURLs(modifiedBody)
+	//modifiedBody := util.Sreefy(string(body))
+	//modifiedBody = util.UpdateURLs(modifiedBody)
+
+	modifiedBody := s.sreeify.Sreeify(body)
 	w.WriteHeader(resp.StatusCode)
-	w.Write([]byte(modifiedBody))
+	w.Write(modifiedBody)
 }
 
 // ProxyHandler returns an HTTP handler function that proxies requests.
-func ProxyHandler(client *http.Client, u *url.URL) http.HandlerFunc {
+func (s *Server) ProxyHandler(client *http.Client, u *url.URL) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		proxyRequest(client, u, w, r)
+		s.proxyRequest(client, u, w, r)
 	}
 }
 
@@ -171,7 +179,7 @@ func sreekiMapper(h string) (*url.URL, bool) {
 	return u2, true
 }
 
-func newRouter(f func(string) (*url.URL, bool)) *chi.Mux {
+func (s *Server) newRouter(f func(string) (*url.URL, bool)) *chi.Mux {
 	router := chi.NewRouter()
 
 	router.Use(middlewareFunc)
@@ -180,12 +188,12 @@ func newRouter(f func(string) (*url.URL, bool)) *chi.Mux {
 
 	for original, replaced := range util.URLMappings {
 		originalUrl, _ := url.Parse(original)
-		router.Handle(fmt.Sprintf("%s*", replaced), http.StripPrefix(replaced, ProxyHandler(httpClient, originalUrl)))
+		router.Handle(fmt.Sprintf("%s*", replaced), http.StripPrefix(replaced, s.ProxyHandler(httpClient, originalUrl)))
 	}
 
 	router.HandleFunc("/news/*", func(w http.ResponseWriter, r *http.Request) {
 		newsUrl, _ := url.Parse("https://en.wikinews.org/")
-		http.StripPrefix("/news/", ProxyHandler(httpClient, newsUrl)).ServeHTTP(w, r)
+		http.StripPrefix("/news/", s.ProxyHandler(httpClient, newsUrl)).ServeHTTP(w, r)
 	})
 
 	// Set up routes for specific assets to be replaced.
@@ -210,7 +218,7 @@ func newRouter(f func(string) (*url.URL, bool)) *chi.Mux {
 
 		handler, ok := handlers[u.String()]
 		if !ok {
-			handler = ProxyHandler(httpClient, u)
+			handler = s.ProxyHandler(httpClient, u)
 			handlers[u.String()] = handler
 		}
 
@@ -221,19 +229,22 @@ func newRouter(f func(string) (*url.URL, bool)) *chi.Mux {
 }
 
 // NewWebServer initializes a new web server with predefined routes and handlers.
-func NewWebServer() (*http.Server, error) {
+func NewWebServer() (*Server, error) {
+	s := &Server{
+		Server:  &http.Server{},
+		sreeify: &sreeify.Client{},
+	}
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
 
 	m := urlMapper(sreekiMapper)
-	router := newRouter(m)
+	router := s.newRouter(m)
 
-	// Set up and return the HTTP server.
-	server := &http.Server{
-		Addr:    ":" + port,
-		Handler: router,
-	}
-	return server, nil
+	s.Server.Addr = ":" + port
+	s.Server.Handler = router
+
+	return s, nil
 }
