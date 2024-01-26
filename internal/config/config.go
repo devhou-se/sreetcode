@@ -7,7 +7,6 @@ type Config struct {
 
 func Load() Config {
 	return Config{
-		//SreeificationServer: getEnv("SREEIFICATION_SERVER", "localhost:50051"),
-		SreeificationServer: "127.0.0.1:50051",
+		SreeificationServer: "host.docker.internal:50051",
 	}
 }

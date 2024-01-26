@@ -7,13 +7,15 @@ import grpc
 import gen.sreeify_pb2_grpc as sreeify_pb2_grpc
 from server import SreeificationService
 
+MAX_WORKERS = 10
+
 
 def main():
     logging.basicConfig(level=logging.INFO)
 
     port = os.environ.get("PORT", 50051)
 
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=MAX_WORKERS))
     sreeify_pb2_grpc.add_SreeificationServiceServicer_to_server(
         SreeificationService(), server
     )

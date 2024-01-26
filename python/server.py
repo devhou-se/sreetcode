@@ -1,5 +1,8 @@
+import logging
+
 import gen.sreeify_pb2 as sreeify_pb2
 import gen.sreeify_pb2_grpc as sreeify_pb2_grpc
+from sreeify import sreeify
 
 
 class Request:
@@ -12,7 +15,8 @@ class PayloadRequest(Request):
         self.payload = payload
 
     def do(self):
-        return f"this was a payload request with payload {self.payload}"
+        text = sreeify(self.payload)
+        return text
 
 
 class UrlRequest(Request):
@@ -20,7 +24,7 @@ class UrlRequest(Request):
         self.url = url
 
     def do(self):
-        return f"this was a url request with url {self.url}"
+        return self.url
 
 
 class SreeificationService(sreeify_pb2_grpc.SreeificationService):

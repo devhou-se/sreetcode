@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -13,6 +14,7 @@ import (
 	"cloud.google.com/go/storage"
 	"github.com/go-chi/chi/v5"
 
+	"github.com/devhou-se/sreetcode/internal/config"
 	"github.com/devhou-se/sreetcode/internal/integration/sreeify"
 	"github.com/devhou-se/sreetcode/internal/util"
 )
@@ -89,11 +91,18 @@ func (s *Server) proxyRequest(client *http.Client, targetURL *url.URL, w http.Re
 		return
 	}
 
-	// Modify the response body text and write it to the original response writer.
-	//modifiedBody := util.Sreefy(string(body))
-	//modifiedBody = util.UpdateURLs(modifiedBody)
+	// if mimetype isnt text/html, just return the body
+	if !strings.Contains(resp.Header.Get("Content-Type"), "text/html") {
+		w.WriteHeader(resp.StatusCode)
+		w.Write(body)
+		return
+	}
 
-	modifiedBody := s.sreeify.Sreeify(body)
+	modifiedBody, err := s.sreeify.Sreeify(body)
+	if err != nil {
+		http.Error(w, "Error sreeifying response", http.StatusInternalServerError)
+		return
+	}
 	w.WriteHeader(resp.StatusCode)
 	w.Write(modifiedBody)
 }
@@ -153,8 +162,14 @@ func middlewareFunc(next http.Handler) http.Handler {
 
 // sreekiMapper is a URL mapper that maps sreekipedia.org URLs to wikipedia.org URLs.
 func sreekiMapper(h string) (*url.URL, bool) {
+	slog.Info(fmt.Sprintf("sreekiMapper: %s", h))
+
 	if h == "" {
 		return nil, false
+	}
+
+	if strings.HasPrefix(h, "localhost") {
+		h = "en.sreekipedia.org"
 	}
 
 	d := fmt.Sprintf("https://%s", h)
@@ -229,10 +244,9 @@ func (s *Server) newRouter(f func(string) (*url.URL, bool)) *chi.Mux {
 }
 
 // NewWebServer initializes a new web server with predefined routes and handlers.
-func NewWebServer() (*Server, error) {
+func NewWebServer(cfg config.Config) (*Server, error) {
 	s := &Server{
-		Server:  &http.Server{},
-		sreeify: &sreeify.Client{},
+		Server: &http.Server{},
 	}
 
 	port := os.Getenv("PORT")
@@ -245,6 +259,13 @@ func NewWebServer() (*Server, error) {
 
 	s.Server.Addr = ":" + port
 	s.Server.Handler = router
+
+	sreeify, err := sreeify.NewClient(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	s.sreeify = sreeify
 
 	return s, nil
 }
