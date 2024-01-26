@@ -113,6 +113,82 @@ func middlewareFunc(next http.Handler) http.Handler {
 	})
 }
 
+func newRouter(f func(string) (*url.URL, bool)) *chi.Mux {
+	router := chi.NewRouter()
+
+	router.Use(middlewareFunc)
+
+	httpClient := &http.Client{}
+	for original, replaced := range util.URLMappings {
+		originalUrl, _ := url.Parse(original)
+		router.Handle(fmt.Sprintf("%s*", replaced), http.StripPrefix(replaced, ProxyHandler(httpClient, originalUrl)))
+	}
+
+	router.HandleFunc("/news/*", func(w http.ResponseWriter, r *http.Request) {
+		newsUrl, _ := url.Parse("https://en.wikinews.org/")
+		http.StripPrefix("/news/", ProxyHandler(httpClient, newsUrl)).ServeHTTP(w, r)
+	})
+
+	// Set up routes for specific assets to be replaced.
+	mappings := map[string]string{
+		"/static/images/mobile/copyright/sreekipedia-wordmark-en.svg": "sreekipedia.org/sreekipedia-wordmark-en.svg",
+		"/static/images/mobile/copyright/sreekipedia-tagline-en.svg":  "sreekipedia.org/tagling.svg",
+		"/static/favicon/sreekipedia.ico":                             "sreekipedia.org/sreeki.ico",
+	}
+	for requestedAsset, replacementAsset := range mappings {
+		router.HandleFunc(requestedAsset, ReplacedAssetHandler(replacementAsset))
+	}
+
+	handlers := map[string]http.HandlerFunc{}
+
+	// Handle all other requests with the proxy.
+	router.HandleFunc("/*", func(w http.ResponseWriter, r *http.Request) {
+		u, ok := f(r.Host)
+		if !ok {
+			http.Error(w, "Not found", http.StatusNotFound)
+			return
+		}
+
+		handler, ok := handlers[u.String()]
+		if !ok {
+			handler = ProxyHandler(httpClient, u)
+			handlers[u.String()] = handler
+		}
+
+		handler.ServeHTTP(w, r)
+	})
+
+	return router
+}
+
+// sreekiMapper is a URL mapper that maps sreekipedia.org URLs to wikipedia.org URLs.
+func sreekiMapper(h string) (*url.URL, bool) {
+	if h == "" {
+		return nil, false
+	}
+
+	d := fmt.Sprintf("https://%s", h)
+	parts := strings.Split(d, ".")
+	if len(parts) < 2 {
+		return nil, false
+	}
+
+	np := len(parts)
+	if !(parts[np-2] == "sreekipedia" && parts[np-1] == "org") {
+		return nil, false
+	}
+
+	parts[np-2] = "wikipedia"
+
+	up := strings.Join(parts, ".")
+	u2, err := url.Parse(up)
+	if err != nil {
+		return nil, false
+	}
+
+	return u2, true
+}
+
 // NewWebServer initializes a new web server with predefined routes and handlers.
 func NewWebServer(u string) (*http.Server, error) {
 	port := os.Getenv("PORT")
