@@ -8,22 +8,53 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 
 	"cloud.google.com/go/storage"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/hostrouter"
 
 	"github.com/devhou-se/sreetcode/internal/util"
 )
 
+// urlMapper is a function that maps a URL to another URL.
+func urlMapper(f func(string) (*url.URL, bool)) func(string) (*url.URL, bool) {
+	cache := map[string]*url.URL{}
+	invalid := map[string]bool{}
+	return func(host string) (*url.URL, bool) {
+		if host == "" {
+			return nil, false
+		}
+		_, ok := invalid[host]
+		if ok {
+			return nil, false
+		}
+		_, ok = cache[host]
+		if !ok {
+			u2, ok2 := f(host)
+			if !ok2 {
+				invalid[host] = true
+				return nil, false
+			}
+			cache[host] = u2
+		}
+		u2 := cache[host]
+		return u2, true
+	}
+}
+
 // proxyRequest forwards the request to the target URL and writes back the response.
-func proxyRequest(client *http.Client, targetURL *url.URL, w http.ResponseWriter, r *http.Request) {
+func proxyRequest(eligible func(*url.URL) bool, client *http.Client, targetURL *url.URL, w http.ResponseWriter, r *http.Request) {
 	// Modify request URL.
 	proxiedURL, err := url.Parse(util.Unsreefy(r.URL.String()))
 	if err != nil {
 		http.Error(w, "Invalid URL", http.StatusBadRequest)
 		return
 	}
+
+	if !eligible(proxiedURL) {
+		http.Redirect(w, r, proxiedURL.String(), http.StatusPermanentRedirect)
+	}
+
 	proxiedURL.Scheme = targetURL.Scheme
 	proxiedURL.Host = targetURL.Host
 
@@ -64,9 +95,9 @@ func proxyRequest(client *http.Client, targetURL *url.URL, w http.ResponseWriter
 }
 
 // ProxyHandler returns an HTTP handler function that proxies requests.
-func ProxyHandler(client *http.Client, u *url.URL) http.HandlerFunc {
+func ProxyHandler(eligible func(*url.URL) bool, client *http.Client, u *url.URL) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		proxyRequest(client, u, w, r)
+		proxyRequest(eligible, client, u, w, r)
 	}
 }
 
@@ -116,27 +147,25 @@ func middlewareFunc(next http.Handler) http.Handler {
 	})
 }
 
-func newRouter(u string) *chi.Mux {
+func newRouter(f func(string) (*url.URL, bool)) *chi.Mux {
 	router := chi.NewRouter()
 
 	router.Use(middlewareFunc)
 
-	// Define the target URL for the proxy.
-	targetURL, err := url.Parse(u)
-	if err != nil {
-		return nil
-	}
-
 	httpClient := &http.Client{}
+
+	eligibleFunc := func(u *url.URL) bool {
+		if strings.
+	}
 
 	for original, replaced := range util.URLMappings {
 		originalUrl, _ := url.Parse(original)
-		router.Handle(fmt.Sprintf("%s*", replaced), http.StripPrefix(replaced, ProxyHandler(httpClient, originalUrl)))
+		router.Handle(fmt.Sprintf("%s*", replaced), http.StripPrefix(replaced, ProxyHandler(eligibleFunc, httpClient, originalUrl)))
 	}
 
 	router.HandleFunc("/news/*", func(w http.ResponseWriter, r *http.Request) {
 		newsUrl, _ := url.Parse("https://en.wikinews.org/")
-		http.StripPrefix("/news/", ProxyHandler(httpClient, newsUrl)).ServeHTTP(w, r)
+		http.StripPrefix("/news/", ProxyHandler(eligibleFunc, httpClient, newsUrl)).ServeHTTP(w, r)
 	})
 
 	// Set up routes for specific assets to be replaced.
@@ -149,18 +178,54 @@ func newRouter(u string) *chi.Mux {
 		router.HandleFunc(requestedAsset, ReplacedAssetHandler(replacementAsset))
 	}
 
+	handlers := map[string]http.HandlerFunc{}
+
 	// Handle all other requests with the proxy.
-	router.HandleFunc("/*", ProxyHandler(httpClient, targetURL))
+	router.HandleFunc("/*", func(w http.ResponseWriter, r *http.Request) {
+		u, ok := f(r.Host)
+		if !ok {
+			http.Error(w, "Not found", http.StatusNotFound)
+			return
+		}
+
+		handler, ok := handlers[u.String()]
+		if !ok {
+			handler = ProxyHandler(eligibleFunc, httpClient, u)
+			handlers[u.String()] = handler
+		}
+
+		handler.ServeHTTP(w, r)
+	})
 
 	return router
 }
 
-func sreekipediaRouter() *chi.Mux {
-	return newRouter("https://en.wikipedia.org")
-}
+// sreekiMapper is a URL mapper that maps sreekipedia.org URLs to wikipedia.org URLs.
+func sreekiMapper(h string) (*url.URL, bool) {
+	if h == "" {
+		return nil, false
+	}
 
-func mobileSreekipediaRouter() *chi.Mux {
-	return newRouter("https://en.m.wikipedia.org")
+	d := fmt.Sprintf("https://%s", h)
+	parts := strings.Split(d, ".")
+	if len(parts) < 2 {
+		return nil, false
+	}
+
+	np := len(parts)
+	if !(parts[np-2] == "sreekipedia" && parts[np-1] == "org") {
+		return nil, false
+	}
+
+	parts[np-2] = "wikipedia"
+
+	up := strings.Join(parts, ".")
+	u2, err := url.Parse(up)
+	if err != nil {
+		return nil, false
+	}
+
+	return u2, true
 }
 
 // NewWebServer initializes a new web server with predefined routes and handlers.
@@ -170,13 +235,8 @@ func NewWebServer() (*http.Server, error) {
 		port = "8080"
 	}
 
-	router := chi.NewRouter()
-	hr := hostrouter.New()
-
-	hr.Map("en.m.sreekipedia.org", mobileSreekipediaRouter())
-	hr.Map("en.sreekipedia.org", sreekipediaRouter())
-
-	router.Mount("/", hr)
+	m := urlMapper(sreekiMapper)
+	router := newRouter(m)
 
 	// Set up and return the HTTP server.
 	server := &http.Server{

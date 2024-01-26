@@ -8,7 +8,7 @@ COPY go.sum go.sum
 COPY ./internal ./internal
 COPY ./app.go ./app.go
 
-RUN CGO_ENABLED=0 GOOS=linux go build -mod vendor -o /server .
+RUN CGO_ENABLED=0 GOOS=linux go build -o /server .
 
 FROM alpine
 
