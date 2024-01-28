@@ -1,6 +1,14 @@
-import re
+# import re
+# import logging
+# import time
+#
+# from bs4 import BeautifulSoup
+from itertools import zip_longest
+import logging
+from lxml import etree, html
 
-from bs4 import BeautifulSoup
+import gen.sreeify_pb2 as sreeify_pb2
+
 
 
 WORD_REPLACENTS = {
@@ -21,79 +29,61 @@ URL_MAPPINGS = {
     "https://en.sreekiversity.org/": "/sreekiversity/",
 }
 
-def sreeify(payload: str) -> str:
-    doc = BeautifulSoup(payload, "html.parser")
-
-    # imgs = doc.find_all("img")
-    # for img in imgs:
-    #     img["src"] = "https://i.imgur.com/6H6i6qQ.jpg"
-    #     img["srcset"] = ""
-
-    body = doc.find("body")
-    for original, replaced in WORD_REPLACENTS.items():
-        o1, r1 = original.lower(), replaced.lower()
-        o2, r2 = original.upper(), replaced.upper()
-        # o3, r3 = original.capitalize(), replaced.capitalize()
-        o4, r4 = original, replaced
-
-        for o, r in [(o1, r1), (o2, r2), (o4, r4)]:
-
-            candidates = body.find_all(string=re.compile(o))
-            for candidate in candidates:
-                candidate.replace_with(candidate.replace(o, r))
-
-    return str(doc)
+EXC_TAGS = ["script", "style", "head", "title", "meta", "link", "noscript", "script"]
+REQ_TAGS = ["body"]  # Assuming you want to process all tags within <body>
+XPATH_EXPR = f"//{'|//'.join(REQ_TAGS)}//*[not(self::{' or self::'.join(EXC_TAGS)})]/text()"
+logging.info(f"XPath expression: {XPATH_EXPR}")
 
 
-# // Unsreefy reverses the replacements made by the Sreefy function, restoring the original words.
-# func Unsreefy(input string) string {
-# 	// Replace each occurrence of the 'value' with its corresponding 'key'.
-# 	for original, replaced := range wordReplacements {
-# 		// Replace with respect to case variations (normal, lower, upper).
-# 		input = strings.ReplaceAll(input, replaced, original)
-# 		input = strings.ReplaceAll(input, strings.ToLower(replaced), strings.ToLower(original))
-# 		input = strings.ReplaceAll(input, strings.ToUpper(replaced), strings.ToUpper(original))
-# 	}
-#
-# 	return input
-# }
-#
-# // Sreefy performs a set of replacements within the input string according to the wordReplacements map.
-# func Sreefy(input string) string {
-# 	// Regular expression to identify URLs to be temporarily removed from the replacement process.
-# 	urlPattern := regexp.MustCompile(`(//)((\w+)\.wikimedia.org)([\w\d+/_\-.%]*)["\s]`)
-# 	urlMatches := urlPattern.FindAllString(input, -1)
-#
-# 	// Temporarily mask matched URLs using a placeholder.
-# 	for i, match := range urlMatches {
-# 		placeholder := fmt.Sprintf("{{%d}}", i)
-# 		input = strings.ReplaceAll(input, match, placeholder)
-# 	}
-#
-# 	// Perform word replacements for different case variations (normal, lower, upper).
-# 	for original, replaced := range wordReplacements {
-# 		input = strings.ReplaceAll(input, original, replaced)
-# 		input = strings.ReplaceAll(input, strings.ToLower(original), strings.ToLower(replaced))
-# 		input = strings.ReplaceAll(input, strings.ToUpper(original), strings.ToUpper(replaced))
-# 	}
-#
-# 	// Correct specific misreplacements.
-# 	input = strings.ReplaceAll(input, "matchSreedia", "matchMedia")
-# 	input = strings.ReplaceAll(input, "@sreedia", "@media")
-#
-# 	// Restore the original URLs by replacing the placeholders.
-# 	for i, match := range urlMatches {
-# 		placeholder := fmt.Sprintf("{{%d}}", i)
-# 		input = strings.ReplaceAll(input, placeholder, match)
-# 	}
-#
-# 	return input
-# }
-#
-# func UpdateURLs(body string) string {
-# 	for original, replaced := range URLMappings {
-# 		body = strings.ReplaceAll(body, original, replaced)
-# 	}
-#
-# 	return body
-# }
+def split_n_join(m: callable, s: str) -> str:
+    if not s:
+        return s
+
+    seps = [[], []]
+
+    curr = ""
+    start_alpha = s[0].isalpha()
+    alpha = start_alpha
+
+    for c in s:
+        if c.isalpha() != alpha:
+            seps[alpha].append(curr)
+            curr = ""
+            alpha = not alpha
+        curr += c
+    seps[alpha].append(curr)
+    seps[1] = [m(w) for w in seps[1]]
+
+    if start_alpha:
+        b, a = seps
+    else:
+        a, b = seps
+
+    return "".join([m + n for m, n in zip_longest(a, b, fillvalue="")])
+
+
+def sreeify_text_lxml(payload: str, link_replacements: list) -> str:
+    def replace_links(s: str) -> str:
+        for link in link_replacements:
+            s = s.replace(link.original, link.replacement)
+        return s
+
+    tree = html.fromstring(payload)
+    tree.rewrite_links(replace_links)
+
+    for text_node in tree.xpath(XPATH_EXPR):
+        parent = text_node.getparent()
+
+        if text_node.is_text:
+            parent.text = split_n_join(sreeify_word, parent.text)
+            parent.tail = split_n_join(sreeify_word, parent.tail)
+
+    return etree.tostring(tree, pretty_print=True, method="html", encoding='unicode')
+
+
+def sreeify_text(payload: str, link_replacements: list) -> str:
+    return sreeify_text_lxml(payload, link_replacements)
+
+
+def sreeify_word(word: str) -> str:
+    return ("sree" * -(-len(word)//4))[:len(word)]

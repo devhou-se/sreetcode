@@ -37,6 +37,9 @@ func (c *Client) Sreeify(input []byte) ([]byte, error) {
 	inpString := string(input)
 
 	req := &pb.SreeifyRequest{
+		LinkReplacements: []*pb.SreeifyRequest_LinkReplacement{
+			{OriginalBaseUri: "en.wikipedia.org", ReplacementBaseUri: "en.sreekipedia.org"},
+		},
 		Data: &pb.SreeifyRequest_Payload{
 			Payload: inpString,
 		},

@@ -1,3 +1,5 @@
 beautifulsoup4
 grpcio
 grpcio-tools
+lxml
+requests

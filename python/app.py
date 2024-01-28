@@ -11,7 +11,7 @@ MAX_WORKERS = 10
 
 
 def main():
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG)
 
     port = os.environ.get("PORT", 50051)
 
@@ -33,4 +33,5 @@ def main():
 
 
 if __name__ == '__main__':
+    logging.info("Starting server")
     main()

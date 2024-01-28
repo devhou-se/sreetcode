@@ -9,9 +9,16 @@ service SreeificationService {
 }
 
 message SreeifyRequest {
+    message LinkReplacement {
+        string original_base_uri = 1;
+        string replacement_base_uri = 2;
+    }
+
+    repeated LinkReplacement link_replacements = 1;
+
     oneof data {
-        string payload = 1;
-        string url = 2;
+        string payload = 2;
+        string url = 3;
     }
 }
 
