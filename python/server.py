@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-
 import logging
 import requests
 import time
@@ -17,8 +16,19 @@ class Replacement:
 
 class Request(ABC):
     @abstractmethod
-    def do(self, link_replacements):
+    def do(self, link_replacements) -> str:
         raise NotImplementedError()
+
+    @staticmethod
+    def build(request) -> "Request":
+        data_field = request.WhichOneof("data")
+        if data_field == "payload":
+            req = PayloadRequest(request.payload)
+        elif data_field == "url":
+            req = UrlRequest(request.url)
+        else:
+            raise ValueError("Invalid request")
+        return req
 
 
 class PayloadRequest(Request):
@@ -43,14 +53,8 @@ class UrlRequest(Request):
 class SreeificationService(sreeify_pb2_grpc.SreeificationService):
     def Sreeify(self, request, context):
         start = time.time()
-        data_field = request.WhichOneof("data")
-        if data_field == "payload":
-            req = PayloadRequest(request.payload)
-        elif data_field == "url":
-            req = UrlRequest(request.url)
-        else:
-            raise ValueError("Invalid request")
 
+        req = Request.build(request)
         resp = req.do(request.link_replacements)
 
         response = sreeify_pb2.SreeifyResponse(payload=resp)

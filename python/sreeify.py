@@ -1,17 +1,10 @@
-# import re
-# import logging
-# import time
-#
-# from bs4 import BeautifulSoup
 from itertools import zip_longest
 import logging
+
 from lxml import etree, html
 
-import gen.sreeify_pb2 as sreeify_pb2
 
-
-
-WORD_REPLACENTS = {
+WORD_REPLACEMENTS = {
     "Wiki": "Sreeki",
     "free encyclopedia": "Sree encyclopedia",
     "Encyclopedia": "Encyclosreedia",
@@ -30,7 +23,7 @@ URL_MAPPINGS = {
 }
 
 EXC_TAGS = ["script", "style", "head", "title", "meta", "link", "noscript", "script"]
-REQ_TAGS = ["body"]  # Assuming you want to process all tags within <body>
+REQ_TAGS = ["body"]
 XPATH_EXPR = f"//{'|//'.join(REQ_TAGS)}//*[not(self::{' or self::'.join(EXC_TAGS)})]/text()"
 logging.info(f"XPath expression: {XPATH_EXPR}")
 
