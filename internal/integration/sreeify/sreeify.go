@@ -21,7 +21,7 @@ func NewClient(cfg config.Config) (*Client, error) {
 
 	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 
-	conn, err := grpc.Dial(cfg.SreeificationServer, opts...)
+	conn, err := grpc.Dial(cfg.SreeifierServer, opts...)
 	if err != nil {
 		return nil, err
 	}

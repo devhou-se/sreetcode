@@ -5,7 +5,12 @@ services:
       - PORT=50051
     ports:
         - 50051:50051
+
   proxy:
     build: .
+    depends_on:
+      - sreeifier
     ports:
       - 8080:8080
+    environment:
+      - SREEIFIER_SERVER=sreeifier:50051
