@@ -5,13 +5,18 @@ from lxml import etree, html
 
 
 WORD_REPLACEMENTS = {
-    "Wiki": "Sreeki",
-    "free encyclopedia": "Sree encyclopedia",
-    "Encyclopedia": "Encyclosreedia",
-    "Free ": "Sree ",
-    "Free_": "Sree_",
-    "Free<": "Sree<",
-    "Media": "Sreedia",
+    # "Wiki": "Sreeki",
+    # "free encyclopedia": "Sree encyclopedia",
+    # "Encyclopedia": "Encyclosreedia",
+    # "Free ": "Sree ",
+    # "Free_": "Sree_",
+    # "Free<": "Sree<",
+    # "Media": "Sreedia",
+    "wiki": "sreeki",
+    "wikipedia": "sreekipedia",
+    "encyclopedia": "encyclosreedia",
+    "free": "sree",
+    "media": "sreedia",
 }
 
 URL_MAPPINGS = {
@@ -79,8 +84,13 @@ def sreeify_text(payload: str, link_replacements: list) -> str:
 
 
 def sreeify_word(word: str) -> str:
-    for w in [word, word.upper(), word.lower()]:
-        if w in WORD_REPLACEMENTS:
-            return WORD_REPLACEMENTS[w]
-
+    for k, v in WORD_REPLACEMENTS.items():
+        if word == k:
+            return v
+        if word == k.capitalize():
+            return v.capitalize()
+        if word == k.upper():
+            return v.upper()
+        if word == k.lower():
+            return v.lower()
     return word
