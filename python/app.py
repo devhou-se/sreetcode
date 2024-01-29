@@ -33,5 +33,4 @@ def main():
 
 
 if __name__ == '__main__':
-    logging.info("Starting server")
     main()

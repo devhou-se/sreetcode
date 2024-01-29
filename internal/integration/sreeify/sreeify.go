@@ -10,6 +10,7 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/devhou-se/sreetcode/internal/config"
 	pb "github.com/devhou-se/sreetcode/internal/gen"
@@ -33,9 +34,12 @@ func loadTLS() grpc.DialOption {
 func NewClient(cfg config.Config) (*Client, error) {
 	c := &Client{}
 
-	opts := []grpc.DialOption{
-		//grpc.WithTransportCredentials(insecure.NewCredentials()),
-		loadTLS(),
+	var opts []grpc.DialOption
+
+	if cfg.Insecure {
+		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	} else {
+		opts = append(opts, loadTLS())
 	}
 
 	conn, err := grpc.Dial(cfg.SreeifierServer, opts...)

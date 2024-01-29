@@ -25,7 +25,6 @@ URL_MAPPINGS = {
 EXC_TAGS = ["script", "style", "head", "title", "meta", "link", "noscript", "script"]
 REQ_TAGS = ["body"]
 XPATH_EXPR = f"//{'|//'.join(REQ_TAGS)}//*[not(self::{' or self::'.join(EXC_TAGS)})]/text()"
-logging.info(f"XPath expression: {XPATH_EXPR}")
 
 
 def split_n_join(m: callable, s: str) -> str:

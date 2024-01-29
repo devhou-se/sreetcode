@@ -53,7 +53,9 @@ jobs:
           service: sreekipedia
           image: gcr.io/baileybutler-syd/sreekipedia:${{ github.sha }}
           region: asia-southeast1
-          flags: "--min-instances=1 --max-instances=100 --allow-unauthenticated"
+          flags: "--min-instances=0 --max-instances=100 --allow-unauthenticated"
+          env_vars: |
+            SREEIFIER_SERVER=sreeifier-vvgwyvu7bq-as.a.run.app:443
 
   build-sreeifier:
     name: Build Sreeifier
@@ -101,4 +103,4 @@ jobs:
           service: sreeifier
           image: gcr.io/baileybutler-syd/sreeifier:${{ github.sha }}
           region: asia-southeast1
-          flags: "--min-instances=1 --max-instances=100 --use-http2 --allow-unauthenticated"
+          flags: "--min-instances=0 --max-instances=100 --use-http2 --allow-unauthenticated"
