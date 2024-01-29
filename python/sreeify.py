@@ -84,6 +84,10 @@ def sreeify_text(payload: str, link_replacements: list) -> str:
 
 
 def sreeify_word(word: str) -> str:
+    for w, r in [("wiki", "sreeki"), ("Wiki", "Sreeki"), ("WIKI", "SREEKI")]:
+        if word.startswith(w):
+            return r + word[len(w):]
+
     for k, v in WORD_REPLACEMENTS.items():
         if word == k:
             return v
