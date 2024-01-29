@@ -58,12 +58,13 @@ def split_n_join(m: callable, s: str) -> str:
 def sreeify_text_lxml(payload: str, link_replacements: list) -> str:
     def replace_links(s: str) -> str:
         for link in link_replacements:
-            s = s.replace(link.original, link.replacement)
+            s = s.replace(link.original_base_uri, link.replacement_base_uri)
         return s
 
     tree = html.fromstring(payload)
     tree.rewrite_links(replace_links)
 
+    # TODO: FIX: This block isn't capturing all the text nodes
     for text_node in tree.xpath(XPATH_EXPR):
         parent = text_node.getparent()
 
@@ -79,4 +80,8 @@ def sreeify_text(payload: str, link_replacements: list) -> str:
 
 
 def sreeify_word(word: str) -> str:
-    return ("sree" * -(-len(word)//4))[:len(word)]
+    for w in [word, word.upper(), word.lower()]:
+        if w in WORD_REPLACEMENTS:
+            return WORD_REPLACEMENTS[w]
+
+    return word

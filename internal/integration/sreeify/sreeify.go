@@ -2,9 +2,14 @@ package sreeify
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"fmt"
+	"log/slog"
+	"time"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/credentials"
 
 	"github.com/devhou-se/sreetcode/internal/config"
 	pb "github.com/devhou-se/sreetcode/internal/gen"
@@ -14,12 +19,24 @@ type Client struct {
 	client pb.SreeificationServiceClient
 }
 
+func loadTLS() grpc.DialOption {
+	systemRoots, err := x509.SystemCertPool()
+	if err != nil {
+		panic(err)
+	}
+	creds := credentials.NewTLS(&tls.Config{
+		RootCAs: systemRoots,
+	})
+	return grpc.WithTransportCredentials(creds)
+}
+
 func NewClient(cfg config.Config) (*Client, error) {
 	c := &Client{}
 
-	var opts []grpc.DialOption
-
-	opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	opts := []grpc.DialOption{
+		//grpc.WithTransportCredentials(insecure.NewCredentials()),
+		loadTLS(),
+	}
 
 	conn, err := grpc.Dial(cfg.SreeifierServer, opts...)
 	if err != nil {
@@ -45,8 +62,11 @@ func (c *Client) Sreeify(input []byte) ([]byte, error) {
 		},
 	}
 
+	start := time.Now()
 	resp, err := c.client.Sreeify(ctx, req)
+	slog.Info(fmt.Sprintf("Sreeify took %s", time.Since(start)))
 	if err != nil {
+		slog.Error(err.Error())
 		return nil, err
 	}
 

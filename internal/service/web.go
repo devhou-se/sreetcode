@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"cloud.google.com/go/storage"
 	"github.com/go-chi/chi/v5"
@@ -70,7 +71,9 @@ func (s *Server) proxyRequest(client *http.Client, targetURL *url.URL, w http.Re
 	}
 
 	// Send the request using the provided HTTP client and get the response.
+	start := time.Now()
 	resp, err := client.Do(req)
+	slog.Info(fmt.Sprintf("Proxy request took %s\n", time.Now().Sub(start)))
 	if err != nil {
 		http.Error(w, "Error making request", http.StatusInternalServerError)
 		log.Printf("Error making request: %s\n", err)
@@ -100,6 +103,7 @@ func (s *Server) proxyRequest(client *http.Client, targetURL *url.URL, w http.Re
 
 	modifiedBody, err := s.sreeify.Sreeify(body)
 	if err != nil {
+		slog.Error(fmt.Sprintf("Error sreeifying response: %s", err))
 		http.Error(w, "Error sreeifying response", http.StatusInternalServerError)
 		return
 	}
@@ -160,6 +164,15 @@ func middlewareFunc(next http.Handler) http.Handler {
 	})
 }
 
+// timerFunc is a middleware function that times processing of the request.
+func timerFunc(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		next.ServeHTTP(w, r)
+		log.Printf("Request took %s\n", time.Now().Sub(start))
+	})
+}
+
 // sreekiMapper is a URL mapper that maps sreekipedia.org URLs to wikipedia.org URLs.
 func sreekiMapper(h string) (*url.URL, bool) {
 	slog.Info(fmt.Sprintf("sreekiMapper: %s", h))
@@ -197,7 +210,7 @@ func sreekiMapper(h string) (*url.URL, bool) {
 func (s *Server) newRouter(f func(string) (*url.URL, bool)) *chi.Mux {
 	router := chi.NewRouter()
 
-	router.Use(middlewareFunc)
+	router.Use(middlewareFunc, timerFunc)
 
 	httpClient := &http.Client{}
 

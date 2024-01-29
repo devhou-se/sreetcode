@@ -9,16 +9,8 @@ type Config struct {
 	SreeifierServer string
 }
 
-func envOrDefault(key, def string) string {
-	v := os.Getenv(key)
-	if v == "" {
-		v = def
-	}
-	return v
-}
-
 func Load() Config {
 	return Config{
-		SreeifierServer: envOrDefault("SREEIFIER_SERVER", "host.docker.internal:50051"),
+		SreeifierServer: os.Getenv("SREEIFIER_SERVER"),
 	}
 }
