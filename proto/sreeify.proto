@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+option go_package = "github.com/devhou-se/sreetcode/proto/gen";
+
+package sreeify;
+
+service SreeificationService {
+    rpc Sreeify(SreeifyRequest) returns (SreeifyResponse) {}
+}
+
+message SreeifyRequest {
+    message LinkReplacement {
+        string original_base_uri = 1;
+        string replacement_base_uri = 2;
+    }
+
+    repeated LinkReplacement link_replacements = 1;
+
+    oneof data {
+        string payload = 2;
+        string url = 3;
+    }
+}
+
+message SreeifyResponse {
+    oneof data {
+        string payload = 1;
+        string location = 2;
+    }
+}

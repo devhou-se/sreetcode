@@ -5,6 +5,8 @@ WORKDIR /app
 COPY go.mod go.mod
 COPY go.sum go.sum
 
+RUN go mod download
+
 COPY ./internal ./internal
 COPY ./app.go ./app.go
 

@@ -1,20 +1,29 @@
-package server
+package service
 
 import (
 	"context"
 	"fmt"
 	"io"
 	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"cloud.google.com/go/storage"
 	"github.com/go-chi/chi/v5"
 
+	"github.com/devhou-se/sreetcode/internal/config"
+	"github.com/devhou-se/sreetcode/internal/integration/sreeify"
 	"github.com/devhou-se/sreetcode/internal/util"
 )
+
+type Server struct {
+	*http.Server
+	sreeify *sreeify.Client
+}
 
 // urlMapper is a function that maps a URL to another URL.
 func urlMapper(f func(string) (*url.URL, bool)) func(string) (*url.URL, bool) {
@@ -43,7 +52,7 @@ func urlMapper(f func(string) (*url.URL, bool)) func(string) (*url.URL, bool) {
 }
 
 // proxyRequest forwards the request to the target URL and writes back the response.
-func proxyRequest(client *http.Client, targetURL *url.URL, w http.ResponseWriter, r *http.Request) {
+func (s *Server) proxyRequest(client *http.Client, targetURL *url.URL, w http.ResponseWriter, r *http.Request) {
 	// Modify request URL.
 	proxiedURL, err := url.Parse(util.Unsreefy(r.URL.String()))
 	if err != nil {
@@ -62,7 +71,9 @@ func proxyRequest(client *http.Client, targetURL *url.URL, w http.ResponseWriter
 	}
 
 	// Send the request using the provided HTTP client and get the response.
+	start := time.Now()
 	resp, err := client.Do(req)
+	slog.Info(fmt.Sprintf("Proxy request took %s\n", time.Now().Sub(start)))
 	if err != nil {
 		http.Error(w, "Error making request", http.StatusInternalServerError)
 		log.Printf("Error making request: %s\n", err)
@@ -83,17 +94,27 @@ func proxyRequest(client *http.Client, targetURL *url.URL, w http.ResponseWriter
 		return
 	}
 
-	// Modify the response body text and write it to the original response writer.
-	modifiedBody := util.Sreefy(string(body))
-	modifiedBody = util.UpdateURLs(modifiedBody)
+	// if mimetype isnt text/html, just return the body
+	if !strings.Contains(resp.Header.Get("Content-Type"), "text/html") {
+		w.WriteHeader(resp.StatusCode)
+		w.Write(body)
+		return
+	}
+
+	modifiedBody, err := s.sreeify.Sreeify(body)
+	if err != nil {
+		slog.Error(fmt.Sprintf("Error sreeifying response: %s", err))
+		http.Error(w, "Error sreeifying response", http.StatusInternalServerError)
+		return
+	}
 	w.WriteHeader(resp.StatusCode)
-	w.Write([]byte(modifiedBody))
+	w.Write(modifiedBody)
 }
 
 // ProxyHandler returns an HTTP handler function that proxies requests.
-func ProxyHandler(client *http.Client, u *url.URL) http.HandlerFunc {
+func (s *Server) ProxyHandler(client *http.Client, u *url.URL) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		proxyRequest(client, u, w, r)
+		s.proxyRequest(client, u, w, r)
 	}
 }
 
@@ -143,10 +164,25 @@ func middlewareFunc(next http.Handler) http.Handler {
 	})
 }
 
+// timerFunc is a middleware function that times processing of the request.
+func timerFunc(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		next.ServeHTTP(w, r)
+		log.Printf("Request took %s\n", time.Now().Sub(start))
+	})
+}
+
 // sreekiMapper is a URL mapper that maps sreekipedia.org URLs to wikipedia.org URLs.
 func sreekiMapper(h string) (*url.URL, bool) {
+	slog.Info(fmt.Sprintf("sreekiMapper: %s", h))
+
 	if h == "" {
 		return nil, false
+	}
+
+	if strings.HasPrefix(h, "localhost") {
+		h = "en.sreekipedia.org"
 	}
 
 	d := fmt.Sprintf("https://%s", h)
@@ -171,21 +207,21 @@ func sreekiMapper(h string) (*url.URL, bool) {
 	return u2, true
 }
 
-func newRouter(f func(string) (*url.URL, bool)) *chi.Mux {
+func (s *Server) newRouter(f func(string) (*url.URL, bool)) *chi.Mux {
 	router := chi.NewRouter()
 
-	router.Use(middlewareFunc)
+	router.Use(middlewareFunc, timerFunc)
 
 	httpClient := &http.Client{}
 
 	for original, replaced := range util.URLMappings {
 		originalUrl, _ := url.Parse(original)
-		router.Handle(fmt.Sprintf("%s*", replaced), http.StripPrefix(replaced, ProxyHandler(httpClient, originalUrl)))
+		router.Handle(fmt.Sprintf("%s*", replaced), http.StripPrefix(replaced, s.ProxyHandler(httpClient, originalUrl)))
 	}
 
 	router.HandleFunc("/news/*", func(w http.ResponseWriter, r *http.Request) {
 		newsUrl, _ := url.Parse("https://en.wikinews.org/")
-		http.StripPrefix("/news/", ProxyHandler(httpClient, newsUrl)).ServeHTTP(w, r)
+		http.StripPrefix("/news/", s.ProxyHandler(httpClient, newsUrl)).ServeHTTP(w, r)
 	})
 
 	// Set up routes for specific assets to be replaced.
@@ -210,7 +246,7 @@ func newRouter(f func(string) (*url.URL, bool)) *chi.Mux {
 
 		handler, ok := handlers[u.String()]
 		if !ok {
-			handler = ProxyHandler(httpClient, u)
+			handler = s.ProxyHandler(httpClient, u)
 			handlers[u.String()] = handler
 		}
 
@@ -221,19 +257,28 @@ func newRouter(f func(string) (*url.URL, bool)) *chi.Mux {
 }
 
 // NewWebServer initializes a new web server with predefined routes and handlers.
-func NewWebServer() (*http.Server, error) {
+func NewWebServer(cfg config.Config) (*Server, error) {
+	s := &Server{
+		Server: &http.Server{},
+	}
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
 
 	m := urlMapper(sreekiMapper)
-	router := newRouter(m)
+	router := s.newRouter(m)
 
-	// Set up and return the HTTP server.
-	server := &http.Server{
-		Addr:    ":" + port,
-		Handler: router,
+	s.Server.Addr = ":" + port
+	s.Server.Handler = router
+
+	sreeify, err := sreeify.NewClient(cfg)
+	if err != nil {
+		return nil, err
 	}
-	return server, nil
+
+	s.sreeify = sreeify
+
+	return s, nil
 }

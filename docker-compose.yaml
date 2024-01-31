@@ -1,0 +1,17 @@
+services:
+  sreeifier:
+    build: ./python
+    environment:
+      - PORT=50051
+    ports:
+        - 50051:50051
+
+  proxy:
+    build: .
+    depends_on:
+      - sreeifier
+    ports:
+      - 8080:8080
+    environment:
+      - INSECURE=true
+      - SREEIFIER_SERVER=sreeifier:50051
