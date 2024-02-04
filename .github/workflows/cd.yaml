@@ -35,6 +35,7 @@ jobs:
   deploy-proxy:
     name: Deploy Proxy
     runs-on: ubuntu-latest
+    environment: cloud
     needs:
       - build-proxy
       - build-sreeifier
@@ -86,6 +87,7 @@ jobs:
   deploy-sreeifier:
     name: Deploy Sreeifier
     runs-on: ubuntu-latest
+    environment: cloud
     needs:
       - build-sreeifier
 
