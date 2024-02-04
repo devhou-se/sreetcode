@@ -20,21 +20,19 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type SreeifyRequest struct {
+type Sreequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	LinkReplacements []*SreeifyRequest_LinkReplacement `protobuf:"bytes,1,rep,name=link_replacements,json=linkReplacements,proto3" json:"link_replacements,omitempty"`
-	// Types that are assignable to Data:
-	//
-	//	*SreeifyRequest_Payload
-	//	*SreeifyRequest_Url
-	Data isSreeifyRequest_Data `protobuf_oneof:"data"`
+	Id         string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Part       int32  `protobuf:"varint,2,opt,name=part,proto3" json:"part,omitempty"`
+	TotalParts int32  `protobuf:"varint,3,opt,name=total_parts,json=totalParts,proto3" json:"total_parts,omitempty"`
+	Data       []byte `protobuf:"bytes,4,opt,name=data,proto3" json:"data,omitempty"`
 }
 
-func (x *SreeifyRequest) Reset() {
-	*x = SreeifyRequest{}
+func (x *Sreequest) Reset() {
+	*x = Sreequest{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_sreeify_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -42,13 +40,13 @@ func (x *SreeifyRequest) Reset() {
 	}
 }
 
-func (x *SreeifyRequest) String() string {
+func (x *Sreequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SreeifyRequest) ProtoMessage() {}
+func (*Sreequest) ProtoMessage() {}
 
-func (x *SreeifyRequest) ProtoReflect() protoreflect.Message {
+func (x *Sreequest) ProtoReflect() protoreflect.Message {
 	mi := &file_sreeify_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -60,69 +58,52 @@ func (x *SreeifyRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SreeifyRequest.ProtoReflect.Descriptor instead.
-func (*SreeifyRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use Sreequest.ProtoReflect.Descriptor instead.
+func (*Sreequest) Descriptor() ([]byte, []int) {
 	return file_sreeify_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *SreeifyRequest) GetLinkReplacements() []*SreeifyRequest_LinkReplacement {
+func (x *Sreequest) GetId() string {
 	if x != nil {
-		return x.LinkReplacements
-	}
-	return nil
-}
-
-func (m *SreeifyRequest) GetData() isSreeifyRequest_Data {
-	if m != nil {
-		return m.Data
-	}
-	return nil
-}
-
-func (x *SreeifyRequest) GetPayload() string {
-	if x, ok := x.GetData().(*SreeifyRequest_Payload); ok {
-		return x.Payload
+		return x.Id
 	}
 	return ""
 }
 
-func (x *SreeifyRequest) GetUrl() string {
-	if x, ok := x.GetData().(*SreeifyRequest_Url); ok {
-		return x.Url
+func (x *Sreequest) GetPart() int32 {
+	if x != nil {
+		return x.Part
 	}
-	return ""
+	return 0
 }
 
-type isSreeifyRequest_Data interface {
-	isSreeifyRequest_Data()
+func (x *Sreequest) GetTotalParts() int32 {
+	if x != nil {
+		return x.TotalParts
+	}
+	return 0
 }
 
-type SreeifyRequest_Payload struct {
-	Payload string `protobuf:"bytes,2,opt,name=payload,proto3,oneof"`
+func (x *Sreequest) GetData() []byte {
+	if x != nil {
+		return x.Data
+	}
+	return nil
 }
 
-type SreeifyRequest_Url struct {
-	Url string `protobuf:"bytes,3,opt,name=url,proto3,oneof"`
-}
-
-func (*SreeifyRequest_Payload) isSreeifyRequest_Data() {}
-
-func (*SreeifyRequest_Url) isSreeifyRequest_Data() {}
-
-type SreeifyResponse struct {
+type Sreesponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Types that are assignable to Data:
-	//
-	//	*SreeifyResponse_Payload
-	//	*SreeifyResponse_Location
-	Data isSreeifyResponse_Data `protobuf_oneof:"data"`
+	Id         string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Part       int32  `protobuf:"varint,2,opt,name=part,proto3" json:"part,omitempty"`
+	TotalParts int32  `protobuf:"varint,3,opt,name=total_parts,json=totalParts,proto3" json:"total_parts,omitempty"`
+	Data       []byte `protobuf:"bytes,4,opt,name=data,proto3" json:"data,omitempty"`
 }
 
-func (x *SreeifyResponse) Reset() {
-	*x = SreeifyResponse{}
+func (x *Sreesponse) Reset() {
+	*x = Sreesponse{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_sreeify_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -130,13 +111,13 @@ func (x *SreeifyResponse) Reset() {
 	}
 }
 
-func (x *SreeifyResponse) String() string {
+func (x *Sreesponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SreeifyResponse) ProtoMessage() {}
+func (*Sreesponse) ProtoMessage() {}
 
-func (x *SreeifyResponse) ProtoReflect() protoreflect.Message {
+func (x *Sreesponse) ProtoReflect() protoreflect.Message {
 	mi := &file_sreeify_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -148,136 +129,62 @@ func (x *SreeifyResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SreeifyResponse.ProtoReflect.Descriptor instead.
-func (*SreeifyResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use Sreesponse.ProtoReflect.Descriptor instead.
+func (*Sreesponse) Descriptor() ([]byte, []int) {
 	return file_sreeify_proto_rawDescGZIP(), []int{1}
 }
 
-func (m *SreeifyResponse) GetData() isSreeifyResponse_Data {
-	if m != nil {
-		return m.Data
+func (x *Sreesponse) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *Sreesponse) GetPart() int32 {
+	if x != nil {
+		return x.Part
+	}
+	return 0
+}
+
+func (x *Sreesponse) GetTotalParts() int32 {
+	if x != nil {
+		return x.TotalParts
+	}
+	return 0
+}
+
+func (x *Sreesponse) GetData() []byte {
+	if x != nil {
+		return x.Data
 	}
 	return nil
-}
-
-func (x *SreeifyResponse) GetPayload() string {
-	if x, ok := x.GetData().(*SreeifyResponse_Payload); ok {
-		return x.Payload
-	}
-	return ""
-}
-
-func (x *SreeifyResponse) GetLocation() string {
-	if x, ok := x.GetData().(*SreeifyResponse_Location); ok {
-		return x.Location
-	}
-	return ""
-}
-
-type isSreeifyResponse_Data interface {
-	isSreeifyResponse_Data()
-}
-
-type SreeifyResponse_Payload struct {
-	Payload string `protobuf:"bytes,1,opt,name=payload,proto3,oneof"`
-}
-
-type SreeifyResponse_Location struct {
-	Location string `protobuf:"bytes,2,opt,name=location,proto3,oneof"`
-}
-
-func (*SreeifyResponse_Payload) isSreeifyResponse_Data() {}
-
-func (*SreeifyResponse_Location) isSreeifyResponse_Data() {}
-
-type SreeifyRequest_LinkReplacement struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	OriginalBaseUri    string `protobuf:"bytes,1,opt,name=original_base_uri,json=originalBaseUri,proto3" json:"original_base_uri,omitempty"`
-	ReplacementBaseUri string `protobuf:"bytes,2,opt,name=replacement_base_uri,json=replacementBaseUri,proto3" json:"replacement_base_uri,omitempty"`
-}
-
-func (x *SreeifyRequest_LinkReplacement) Reset() {
-	*x = SreeifyRequest_LinkReplacement{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_sreeify_proto_msgTypes[2]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *SreeifyRequest_LinkReplacement) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SreeifyRequest_LinkReplacement) ProtoMessage() {}
-
-func (x *SreeifyRequest_LinkReplacement) ProtoReflect() protoreflect.Message {
-	mi := &file_sreeify_proto_msgTypes[2]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SreeifyRequest_LinkReplacement.ProtoReflect.Descriptor instead.
-func (*SreeifyRequest_LinkReplacement) Descriptor() ([]byte, []int) {
-	return file_sreeify_proto_rawDescGZIP(), []int{0, 0}
-}
-
-func (x *SreeifyRequest_LinkReplacement) GetOriginalBaseUri() string {
-	if x != nil {
-		return x.OriginalBaseUri
-	}
-	return ""
-}
-
-func (x *SreeifyRequest_LinkReplacement) GetReplacementBaseUri() string {
-	if x != nil {
-		return x.ReplacementBaseUri
-	}
-	return ""
 }
 
 var File_sreeify_proto protoreflect.FileDescriptor
 
 var file_sreeify_proto_rawDesc = []byte{
 	0x0a, 0x0d, 0x73, 0x72, 0x65, 0x65, 0x69, 0x66, 0x79, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12,
-	0x07, 0x73, 0x72, 0x65, 0x65, 0x69, 0x66, 0x79, 0x22, 0x8f, 0x02, 0x0a, 0x0e, 0x53, 0x72, 0x65,
-	0x65, 0x69, 0x66, 0x79, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x54, 0x0a, 0x11, 0x6c,
-	0x69, 0x6e, 0x6b, 0x5f, 0x72, 0x65, 0x70, 0x6c, 0x61, 0x63, 0x65, 0x6d, 0x65, 0x6e, 0x74, 0x73,
-	0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x27, 0x2e, 0x73, 0x72, 0x65, 0x65, 0x69, 0x66, 0x79,
-	0x2e, 0x53, 0x72, 0x65, 0x65, 0x69, 0x66, 0x79, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x2e,
-	0x4c, 0x69, 0x6e, 0x6b, 0x52, 0x65, 0x70, 0x6c, 0x61, 0x63, 0x65, 0x6d, 0x65, 0x6e, 0x74, 0x52,
-	0x10, 0x6c, 0x69, 0x6e, 0x6b, 0x52, 0x65, 0x70, 0x6c, 0x61, 0x63, 0x65, 0x6d, 0x65, 0x6e, 0x74,
-	0x73, 0x12, 0x1a, 0x0a, 0x07, 0x70, 0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0x18, 0x02, 0x20, 0x01,
-	0x28, 0x09, 0x48, 0x00, 0x52, 0x07, 0x70, 0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0x12, 0x12, 0x0a,
-	0x03, 0x75, 0x72, 0x6c, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x48, 0x00, 0x52, 0x03, 0x75, 0x72,
-	0x6c, 0x1a, 0x6f, 0x0a, 0x0f, 0x4c, 0x69, 0x6e, 0x6b, 0x52, 0x65, 0x70, 0x6c, 0x61, 0x63, 0x65,
-	0x6d, 0x65, 0x6e, 0x74, 0x12, 0x2a, 0x0a, 0x11, 0x6f, 0x72, 0x69, 0x67, 0x69, 0x6e, 0x61, 0x6c,
-	0x5f, 0x62, 0x61, 0x73, 0x65, 0x5f, 0x75, 0x72, 0x69, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
-	0x0f, 0x6f, 0x72, 0x69, 0x67, 0x69, 0x6e, 0x61, 0x6c, 0x42, 0x61, 0x73, 0x65, 0x55, 0x72, 0x69,
-	0x12, 0x30, 0x0a, 0x14, 0x72, 0x65, 0x70, 0x6c, 0x61, 0x63, 0x65, 0x6d, 0x65, 0x6e, 0x74, 0x5f,
-	0x62, 0x61, 0x73, 0x65, 0x5f, 0x75, 0x72, 0x69, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x12,
-	0x72, 0x65, 0x70, 0x6c, 0x61, 0x63, 0x65, 0x6d, 0x65, 0x6e, 0x74, 0x42, 0x61, 0x73, 0x65, 0x55,
-	0x72, 0x69, 0x42, 0x06, 0x0a, 0x04, 0x64, 0x61, 0x74, 0x61, 0x22, 0x53, 0x0a, 0x0f, 0x53, 0x72,
-	0x65, 0x65, 0x69, 0x66, 0x79, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x1a, 0x0a,
-	0x07, 0x70, 0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x48, 0x00,
-	0x52, 0x07, 0x70, 0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0x12, 0x1c, 0x0a, 0x08, 0x6c, 0x6f, 0x63,
-	0x61, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x48, 0x00, 0x52, 0x08, 0x6c,
-	0x6f, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x42, 0x06, 0x0a, 0x04, 0x64, 0x61, 0x74, 0x61, 0x32,
-	0x56, 0x0a, 0x14, 0x53, 0x72, 0x65, 0x65, 0x69, 0x66, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e,
-	0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x3e, 0x0a, 0x07, 0x53, 0x72, 0x65, 0x65, 0x69,
-	0x66, 0x79, 0x12, 0x17, 0x2e, 0x73, 0x72, 0x65, 0x65, 0x69, 0x66, 0x79, 0x2e, 0x53, 0x72, 0x65,
-	0x65, 0x69, 0x66, 0x79, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x18, 0x2e, 0x73, 0x72,
-	0x65, 0x65, 0x69, 0x66, 0x79, 0x2e, 0x53, 0x72, 0x65, 0x65, 0x69, 0x66, 0x79, 0x52, 0x65, 0x73,
-	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x00, 0x42, 0x81, 0x01, 0x0a, 0x0b, 0x63, 0x6f, 0x6d, 0x2e,
+	0x07, 0x73, 0x72, 0x65, 0x65, 0x69, 0x66, 0x79, 0x22, 0x64, 0x0a, 0x09, 0x53, 0x72, 0x65, 0x65,
+	0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28,
+	0x09, 0x52, 0x02, 0x69, 0x64, 0x12, 0x12, 0x0a, 0x04, 0x70, 0x61, 0x72, 0x74, 0x18, 0x02, 0x20,
+	0x01, 0x28, 0x05, 0x52, 0x04, 0x70, 0x61, 0x72, 0x74, 0x12, 0x1f, 0x0a, 0x0b, 0x74, 0x6f, 0x74,
+	0x61, 0x6c, 0x5f, 0x70, 0x61, 0x72, 0x74, 0x73, 0x18, 0x03, 0x20, 0x01, 0x28, 0x05, 0x52, 0x0a,
+	0x74, 0x6f, 0x74, 0x61, 0x6c, 0x50, 0x61, 0x72, 0x74, 0x73, 0x12, 0x12, 0x0a, 0x04, 0x64, 0x61,
+	0x74, 0x61, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x04, 0x64, 0x61, 0x74, 0x61, 0x22, 0x65,
+	0x0a, 0x0a, 0x53, 0x72, 0x65, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x0e, 0x0a, 0x02,
+	0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x12, 0x12, 0x0a, 0x04,
+	0x70, 0x61, 0x72, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x05, 0x52, 0x04, 0x70, 0x61, 0x72, 0x74,
+	0x12, 0x1f, 0x0a, 0x0b, 0x74, 0x6f, 0x74, 0x61, 0x6c, 0x5f, 0x70, 0x61, 0x72, 0x74, 0x73, 0x18,
+	0x03, 0x20, 0x01, 0x28, 0x05, 0x52, 0x0a, 0x74, 0x6f, 0x74, 0x61, 0x6c, 0x50, 0x61, 0x72, 0x74,
+	0x73, 0x12, 0x12, 0x0a, 0x04, 0x64, 0x61, 0x74, 0x61, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0c, 0x52,
+	0x04, 0x64, 0x61, 0x74, 0x61, 0x32, 0x50, 0x0a, 0x14, 0x53, 0x72, 0x65, 0x65, 0x69, 0x66, 0x69,
+	0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x38, 0x0a,
+	0x07, 0x53, 0x72, 0x65, 0x65, 0x69, 0x66, 0x79, 0x12, 0x12, 0x2e, 0x73, 0x72, 0x65, 0x65, 0x69,
+	0x66, 0x79, 0x2e, 0x53, 0x72, 0x65, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x13, 0x2e, 0x73,
+	0x72, 0x65, 0x65, 0x69, 0x66, 0x79, 0x2e, 0x53, 0x72, 0x65, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
+	0x65, 0x22, 0x00, 0x28, 0x01, 0x30, 0x01, 0x42, 0x81, 0x01, 0x0a, 0x0b, 0x63, 0x6f, 0x6d, 0x2e,
 	0x73, 0x72, 0x65, 0x65, 0x69, 0x66, 0x79, 0x42, 0x0c, 0x53, 0x72, 0x65, 0x65, 0x69, 0x66, 0x79,
 	0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x28, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e,
 	0x63, 0x6f, 0x6d, 0x2f, 0x64, 0x65, 0x76, 0x68, 0x6f, 0x75, 0x2d, 0x73, 0x65, 0x2f, 0x73, 0x72,
@@ -301,21 +208,19 @@ func file_sreeify_proto_rawDescGZIP() []byte {
 	return file_sreeify_proto_rawDescData
 }
 
-var file_sreeify_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_sreeify_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_sreeify_proto_goTypes = []interface{}{
-	(*SreeifyRequest)(nil),                 // 0: sreeify.SreeifyRequest
-	(*SreeifyResponse)(nil),                // 1: sreeify.SreeifyResponse
-	(*SreeifyRequest_LinkReplacement)(nil), // 2: sreeify.SreeifyRequest.LinkReplacement
+	(*Sreequest)(nil),  // 0: sreeify.Sreequest
+	(*Sreesponse)(nil), // 1: sreeify.Sreesponse
 }
 var file_sreeify_proto_depIdxs = []int32{
-	2, // 0: sreeify.SreeifyRequest.link_replacements:type_name -> sreeify.SreeifyRequest.LinkReplacement
-	0, // 1: sreeify.SreeificationService.Sreeify:input_type -> sreeify.SreeifyRequest
-	1, // 2: sreeify.SreeificationService.Sreeify:output_type -> sreeify.SreeifyResponse
-	2, // [2:3] is the sub-list for method output_type
-	1, // [1:2] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	0, // 0: sreeify.SreeificationService.Sreeify:input_type -> sreeify.Sreequest
+	1, // 1: sreeify.SreeificationService.Sreeify:output_type -> sreeify.Sreesponse
+	1, // [1:2] is the sub-list for method output_type
+	0, // [0:1] is the sub-list for method input_type
+	0, // [0:0] is the sub-list for extension type_name
+	0, // [0:0] is the sub-list for extension extendee
+	0, // [0:0] is the sub-list for field type_name
 }
 
 func init() { file_sreeify_proto_init() }
@@ -325,7 +230,7 @@ func file_sreeify_proto_init() {
 	}
 	if !protoimpl.UnsafeEnabled {
 		file_sreeify_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SreeifyRequest); i {
+			switch v := v.(*Sreequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -337,7 +242,7 @@ func file_sreeify_proto_init() {
 			}
 		}
 		file_sreeify_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SreeifyResponse); i {
+			switch v := v.(*Sreesponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -348,26 +253,6 @@ func file_sreeify_proto_init() {
 				return nil
 			}
 		}
-		file_sreeify_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SreeifyRequest_LinkReplacement); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-	}
-	file_sreeify_proto_msgTypes[0].OneofWrappers = []interface{}{
-		(*SreeifyRequest_Payload)(nil),
-		(*SreeifyRequest_Url)(nil),
-	}
-	file_sreeify_proto_msgTypes[1].OneofWrappers = []interface{}{
-		(*SreeifyResponse_Payload)(nil),
-		(*SreeifyResponse_Location)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -375,7 +260,7 @@ func file_sreeify_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_sreeify_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -1,63 +1,49 @@
-from abc import ABC, abstractmethod
 import logging
-import requests
 import time
 
 import gen.sreeify_pb2 as sreeify_pb2
 import gen.sreeify_pb2_grpc as sreeify_pb2_grpc
 from sreeify import sreeify_text
 
-
-class Replacement:
-    def __init__(self, original, replacement):
-        self.original = original
-        self.replacement = replacement
-
-
-class Request(ABC):
-    @abstractmethod
-    def do(self, link_replacements) -> str:
-        raise NotImplementedError()
-
-    @staticmethod
-    def build(request) -> "Request":
-        data_field = request.WhichOneof("data")
-        if data_field == "payload":
-            req = PayloadRequest(request.payload)
-        elif data_field == "url":
-            req = UrlRequest(request.url)
-        else:
-            raise ValueError("Invalid request")
-        return req
-
-
-class PayloadRequest(Request):
-    def __init__(self, payload):
-        self.payload = payload
-
-    def do(self, link_replacements):
-        text = sreeify_text(self.payload, link_replacements)
-        return text
-
-
-class UrlRequest(Request):
-    def __init__(self, url):
-        self.url = url
-
-    def do(self, link_replacements):
-        payload = requests.get(self.url).text
-        text = sreeify_text(payload, link_replacements)
-        return text
+CHUNK_SIZE = 2048  # 2KB
+ENCODING = "utf-8"
 
 
 class SreeificationService(sreeify_pb2_grpc.SreeificationService):
-    def Sreeify(self, request, context):
+    def Sreeify(self, sreequest_iterator: list[sreeify_pb2.Sreequest], target):
+        # Receive and process request parts
+        req_id = None
         start = time.time()
+        parts = []
+        for sreequest in sreequest_iterator:
+            if req_id is None:
+                req_id = sreequest.id
+            if len(parts) < sreequest.total_parts:
+                parts += [None] * (sreequest.total_parts - len(parts))
+            parts[sreequest.part] = sreequest.data
+            if None in parts:
+                continue
+            break
 
-        req = Request.build(request)
-        resp = req.do(request.link_replacements)
+        flat_bytes = b"".join(parts)
+        payload = flat_bytes.decode(ENCODING)
+        logging.info(f"Received request {req_id} with {len(parts)} parts and {len(flat_bytes)} bytes")
 
-        response = sreeify_pb2.SreeifyResponse(payload=resp)
+        # Process request
+        resp = sreeify_text(payload)
+
+        # Chunk and send response parts
+        chunks = [resp[i:i + CHUNK_SIZE] for i in range(0, len(resp), CHUNK_SIZE)]
+        for i, chunk in enumerate(chunks):
+            yield sreeify_pb2.Sreesponse(
+                id=req_id,
+                part=i,
+                total_parts=len(chunks),
+                data=bytes(chunk, ENCODING)
+            )
+
+        logging.info(f"Sent response {req_id} with {len(chunks)} parts and {len(resp)} bytes")
+
         end = time.time()
         logging.info(f"Request took {end - start} seconds")
-        return response
+        return

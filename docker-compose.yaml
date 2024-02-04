@@ -12,6 +12,9 @@ services:
       - sreeifier
     ports:
       - 8080:8080
+    volumes:
+      - ~/.config/gcloud/application_default_credentials.json:/tmp/cred.json
     environment:
       - INSECURE=true
       - SREEIFIER_SERVER=sreeifier:50051
+      - GOOGLE_APPLICATION_CREDENTIALS=/tmp/cred.json

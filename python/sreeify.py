@@ -59,10 +59,10 @@ def split_n_join(m: callable, s: str) -> str:
     return "".join([m + n for m, n in zip_longest(a, b, fillvalue="")])
 
 
-def sreeify_text_lxml(payload: str, link_replacements: list) -> str:
+def sreeify_text_lxml(payload: str) -> str:
     def replace_links(s: str) -> str:
-        for link in link_replacements:
-            s = s.replace(link.original_base_uri, link.replacement_base_uri)
+        # for link in link_replacements:
+        #     s = s.replace(link.original_base_uri, link.replacement_base_uri)
         return s
 
     tree = html.fromstring(payload)
@@ -79,8 +79,8 @@ def sreeify_text_lxml(payload: str, link_replacements: list) -> str:
     return etree.tostring(tree, pretty_print=True, method="html", encoding='unicode')
 
 
-def sreeify_text(payload: str, link_replacements: list) -> str:
-    return sreeify_text_lxml(payload, link_replacements)
+def sreeify_text(payload: str) -> str:
+    return sreeify_text_lxml(payload)
 
 
 def sreeify_word(word: str) -> str:
