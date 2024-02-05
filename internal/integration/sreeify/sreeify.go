@@ -8,7 +8,9 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/google/uuid"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/backoff"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -16,8 +18,13 @@ import (
 	pb "github.com/devhou-se/sreetcode/internal/gen"
 )
 
+const (
+	chunkSize = 1024
+)
+
 type Client struct {
 	client pb.SreeificationServiceClient
+	conn   pb.SreeificationService_SreeifyClient
 }
 
 func loadTLS() grpc.DialOption {
@@ -34,7 +41,16 @@ func loadTLS() grpc.DialOption {
 func NewClient(cfg config.Config) (*Client, error) {
 	c := &Client{}
 
-	var opts []grpc.DialOption
+	bo := backoff.Config{
+		BaseDelay:  100 * time.Millisecond,
+		MaxDelay:   5 * time.Second,
+		Multiplier: 1.6,
+		Jitter:     0.2,
+	}
+
+	opts := []grpc.DialOption{
+		grpc.WithConnectParams(grpc.ConnectParams{Backoff: bo}),
+	}
 
 	if cfg.Insecure {
 		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -55,24 +71,80 @@ func NewClient(cfg config.Config) (*Client, error) {
 func (c *Client) Sreeify(input []byte) ([]byte, error) {
 	ctx := context.Background()
 
-	inpString := string(input)
-
-	req := &pb.SreeifyRequest{
-		LinkReplacements: []*pb.SreeifyRequest_LinkReplacement{
-			{OriginalBaseUri: "en.wikipedia.org", ReplacementBaseUri: "en.sreekipedia.org"},
-		},
-		Data: &pb.SreeifyRequest_Payload{
-			Payload: inpString,
-		},
-	}
-
-	start := time.Now()
-	resp, err := c.client.Sreeify(ctx, req)
-	slog.Info(fmt.Sprintf("Sreeify took %s", time.Since(start)))
+	conn, err := c.client.Sreeify(ctx)
 	if err != nil {
-		slog.Error(err.Error())
 		return nil, err
 	}
 
-	return []byte(resp.GetPayload()), nil
+	rawId, err := uuid.NewUUID()
+	if err != nil {
+		return nil, err
+	}
+	id := rawId.String()
+
+	// Chunk and send input
+	go func() {
+		chunks := chunk(input)
+		for i, c := range chunks {
+			err = conn.Send(&pb.Sreequest{
+				Id:         id,
+				Part:       int32(i),
+				TotalParts: int32(len(chunks)),
+				Data:       c,
+			})
+			if err != nil {
+				slog.Error(fmt.Sprintf("Error sending chunk %d: %s", i, err))
+			}
+		}
+	}()
+
+	// Blocking call to receive response
+	resp, err := receive(conn)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+func chunk(b []byte) [][]byte {
+	var bs [][]byte
+	for i := 0; i < len(b); i += chunkSize {
+		end := i + chunkSize
+		if end > len(b) {
+			end = len(b)
+		}
+		bs = append(bs, b[i:end])
+	}
+	return bs
+}
+
+func receive(conn pb.SreeificationService_SreeifyClient) ([]byte, error) {
+	var bs [][]byte
+	received := 0
+	for {
+		resp, err := conn.Recv()
+		if err != nil {
+			return nil, err
+		}
+		if int32(len(bs)) != resp.TotalParts {
+			bs2 := make([][]byte, resp.TotalParts)
+			copy(bs2, bs)
+			bs = bs2
+		}
+
+		bs[resp.Part] = resp.Data
+		received++
+
+		if received == int(resp.TotalParts) {
+			break
+		}
+	}
+
+	var b []byte
+	for _, part := range bs {
+		b = append(b, part...)
+	}
+
+	return b, nil
 }

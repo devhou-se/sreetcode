@@ -14,17 +14,17 @@ class SreeificationServiceStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.Sreeify = channel.unary_unary(
+        self.Sreeify = channel.stream_stream(
                 '/sreeify.SreeificationService/Sreeify',
-                request_serializer=sreeify__pb2.SreeifyRequest.SerializeToString,
-                response_deserializer=sreeify__pb2.SreeifyResponse.FromString,
+                request_serializer=sreeify__pb2.Sreequest.SerializeToString,
+                response_deserializer=sreeify__pb2.Sreesponse.FromString,
                 )
 
 
 class SreeificationServiceServicer(object):
     """Missing associated documentation comment in .proto file."""
 
-    def Sreeify(self, request, context):
+    def Sreeify(self, request_iterator, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -33,10 +33,10 @@ class SreeificationServiceServicer(object):
 
 def add_SreeificationServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'Sreeify': grpc.unary_unary_rpc_method_handler(
+            'Sreeify': grpc.stream_stream_rpc_method_handler(
                     servicer.Sreeify,
-                    request_deserializer=sreeify__pb2.SreeifyRequest.FromString,
-                    response_serializer=sreeify__pb2.SreeifyResponse.SerializeToString,
+                    request_deserializer=sreeify__pb2.Sreequest.FromString,
+                    response_serializer=sreeify__pb2.Sreesponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -49,7 +49,7 @@ class SreeificationService(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
-    def Sreeify(request,
+    def Sreeify(request_iterator,
             target,
             options=(),
             channel_credentials=None,
@@ -59,8 +59,8 @@ class SreeificationService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/sreeify.SreeificationService/Sreeify',
-            sreeify__pb2.SreeifyRequest.SerializeToString,
-            sreeify__pb2.SreeifyResponse.FromString,
+        return grpc.experimental.stream_stream(request_iterator, target, '/sreeify.SreeificationService/Sreeify',
+            sreeify__pb2.Sreequest.SerializeToString,
+            sreeify__pb2.Sreesponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

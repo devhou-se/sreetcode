@@ -26,7 +26,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SreeificationServiceClient interface {
-	Sreeify(ctx context.Context, in *SreeifyRequest, opts ...grpc.CallOption) (*SreeifyResponse, error)
+	Sreeify(ctx context.Context, opts ...grpc.CallOption) (SreeificationService_SreeifyClient, error)
 }
 
 type sreeificationServiceClient struct {
@@ -37,20 +37,42 @@ func NewSreeificationServiceClient(cc grpc.ClientConnInterface) SreeificationSer
 	return &sreeificationServiceClient{cc}
 }
 
-func (c *sreeificationServiceClient) Sreeify(ctx context.Context, in *SreeifyRequest, opts ...grpc.CallOption) (*SreeifyResponse, error) {
-	out := new(SreeifyResponse)
-	err := c.cc.Invoke(ctx, SreeificationService_Sreeify_FullMethodName, in, out, opts...)
+func (c *sreeificationServiceClient) Sreeify(ctx context.Context, opts ...grpc.CallOption) (SreeificationService_SreeifyClient, error) {
+	stream, err := c.cc.NewStream(ctx, &SreeificationService_ServiceDesc.Streams[0], SreeificationService_Sreeify_FullMethodName, opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &sreeificationServiceSreeifyClient{stream}
+	return x, nil
+}
+
+type SreeificationService_SreeifyClient interface {
+	Send(*Sreequest) error
+	Recv() (*Sreesponse, error)
+	grpc.ClientStream
+}
+
+type sreeificationServiceSreeifyClient struct {
+	grpc.ClientStream
+}
+
+func (x *sreeificationServiceSreeifyClient) Send(m *Sreequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *sreeificationServiceSreeifyClient) Recv() (*Sreesponse, error) {
+	m := new(Sreesponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 // SreeificationServiceServer is the server API for SreeificationService service.
 // All implementations must embed UnimplementedSreeificationServiceServer
 // for forward compatibility
 type SreeificationServiceServer interface {
-	Sreeify(context.Context, *SreeifyRequest) (*SreeifyResponse, error)
+	Sreeify(SreeificationService_SreeifyServer) error
 	mustEmbedUnimplementedSreeificationServiceServer()
 }
 
@@ -58,8 +80,8 @@ type SreeificationServiceServer interface {
 type UnimplementedSreeificationServiceServer struct {
 }
 
-func (UnimplementedSreeificationServiceServer) Sreeify(context.Context, *SreeifyRequest) (*SreeifyResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Sreeify not implemented")
+func (UnimplementedSreeificationServiceServer) Sreeify(SreeificationService_SreeifyServer) error {
+	return status.Errorf(codes.Unimplemented, "method Sreeify not implemented")
 }
 func (UnimplementedSreeificationServiceServer) mustEmbedUnimplementedSreeificationServiceServer() {}
 
@@ -74,22 +96,30 @@ func RegisterSreeificationServiceServer(s grpc.ServiceRegistrar, srv Sreeificati
 	s.RegisterService(&SreeificationService_ServiceDesc, srv)
 }
 
-func _SreeificationService_Sreeify_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SreeifyRequest)
-	if err := dec(in); err != nil {
+func _SreeificationService_Sreeify_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(SreeificationServiceServer).Sreeify(&sreeificationServiceSreeifyServer{stream})
+}
+
+type SreeificationService_SreeifyServer interface {
+	Send(*Sreesponse) error
+	Recv() (*Sreequest, error)
+	grpc.ServerStream
+}
+
+type sreeificationServiceSreeifyServer struct {
+	grpc.ServerStream
+}
+
+func (x *sreeificationServiceSreeifyServer) Send(m *Sreesponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *sreeificationServiceSreeifyServer) Recv() (*Sreequest, error) {
+	m := new(Sreequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
-	if interceptor == nil {
-		return srv.(SreeificationServiceServer).Sreeify(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SreeificationService_Sreeify_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SreeificationServiceServer).Sreeify(ctx, req.(*SreeifyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
+	return m, nil
 }
 
 // SreeificationService_ServiceDesc is the grpc.ServiceDesc for SreeificationService service.
@@ -98,12 +128,14 @@ func _SreeificationService_Sreeify_Handler(srv interface{}, ctx context.Context,
 var SreeificationService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "sreeify.SreeificationService",
 	HandlerType: (*SreeificationServiceServer)(nil),
-	Methods: []grpc.MethodDesc{
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
 		{
-			MethodName: "Sreeify",
-			Handler:    _SreeificationService_Sreeify_Handler,
+			StreamName:    "Sreeify",
+			Handler:       _SreeificationService_Sreeify_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
 	Metadata: "sreeify.proto",
 }

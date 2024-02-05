@@ -12,3 +12,5 @@ plugins:
     out: python/gen
   - plugin: buf.build/grpc/python
     out: python/gen
+  - plugin: mypy
+    out: python/gen
