@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"io"
 	"log/slog"
 	"time"
 
@@ -96,6 +97,10 @@ func (c *Client) Sreeify(input []byte) ([]byte, error) {
 				slog.Error(fmt.Sprintf("Error sending chunk %d: %s", i, err))
 			}
 		}
+		err = conn.CloseSend()
+		if err != nil {
+			slog.Error(fmt.Sprintf("Error closing send: %s", err))
+		}
 	}()
 
 	// Blocking call to receive response
@@ -124,6 +129,9 @@ func receive(conn pb.SreeificationService_SreeifyClient) ([]byte, error) {
 	received := 0
 	for {
 		resp, err := conn.Recv()
+		if err == io.EOF {
+			break
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -135,10 +143,6 @@ func receive(conn pb.SreeificationService_SreeifyClient) ([]byte, error) {
 
 		bs[resp.Part] = resp.Data
 		received++
-
-		if received == int(resp.TotalParts) {
-			break
-		}
 	}
 
 	var b []byte

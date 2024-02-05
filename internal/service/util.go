@@ -2,7 +2,6 @@ package service
 
 import (
 	"fmt"
-	"log"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -47,7 +46,7 @@ func sreekiMapper(h string) (*url.URL, error) {
 // middlewareFunc is a middleware function that logs the request.
 func middlewareFunc(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("%s %s\n", r.Method, r.URL)
+		slog.Info(fmt.Sprintf("%s %s\n", r.Method, r.URL))
 		next.ServeHTTP(w, r)
 	})
 }
@@ -57,6 +56,6 @@ func timerFunc(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		next.ServeHTTP(w, r)
-		log.Printf("Request took %s\n", time.Now().Sub(start))
+		slog.Info(fmt.Sprintf("Request took %s\n", time.Now().Sub(start)))
 	})
 }

@@ -20,6 +20,7 @@ type Server struct {
 	sreeify *sreeify.Client
 }
 
+// NewWebServer creates a new web server.
 func NewWebServer(cfg config.Config) (*Server, error) {
 	s := &Server{}
 	var err error
@@ -37,6 +38,7 @@ func NewWebServer(cfg config.Config) (*Server, error) {
 	return s, nil
 }
 
+// httpServer creates a new HTTP server with router
 func (s *Server) httpServer(cfg config.Config) (*http.Server, error) {
 	hs := &http.Server{}
 	var err error
@@ -50,6 +52,7 @@ func (s *Server) httpServer(cfg config.Config) (*http.Server, error) {
 	return hs, nil
 }
 
+// router creates a new router with middleware and routes
 func (s *Server) router(cfg config.Config) (*chi.Mux, error) {
 	r := chi.NewRouter()
 	r.Use(middlewareFunc, timerFunc)
@@ -93,6 +96,7 @@ func assetOverrideHandler(assetLocation string) http.HandlerFunc {
 	}
 }
 
+// proxyHandler is a handler that proxies requests to the appropriate URL.
 func (s *Server) proxyHandler(w http.ResponseWriter, r *http.Request) {
 	u, err := sreekiMapper(r.Host)
 	if err != nil {
