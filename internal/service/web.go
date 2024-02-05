@@ -5,7 +5,6 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
-	"net/url"
 	"strings"
 
 	"cloud.google.com/go/storage"
@@ -60,23 +59,7 @@ func (s *Server) router(cfg config.Config) (*chi.Mux, error) {
 		r.HandleFunc(requestedAsset, assetOverrideHandler(replacementAsset))
 	}
 
-	handlers := map[string]http.HandlerFunc{}
-	r.HandleFunc("/*", func(w http.ResponseWriter, r *http.Request) {
-		u, err := sreekiMapper(r.Host)
-		if err != nil {
-			slog.Error("Error mapping URL")
-			http.Error(w, "Not found", http.StatusNotFound)
-			return
-		}
-
-		handler, ok := handlers[u.String()]
-		if !ok {
-			handler = s.proxyHandler(u)
-			handlers[u.String()] = handler
-		}
-
-		handler.ServeHTTP(w, r)
-	})
+	r.HandleFunc("/*", s.proxyHandler)
 
 	return r, nil
 }
@@ -110,57 +93,70 @@ func assetOverrideHandler(assetLocation string) http.HandlerFunc {
 	}
 }
 
-func (s *Server) proxyHandler(u *url.URL) http.HandlerFunc {
+func (s *Server) proxyHandler(w http.ResponseWriter, r *http.Request) {
+	u, err := sreekiMapper(r.Host)
+	if err != nil {
+		slog.Error("Error mapping URL")
+		http.Error(w, "Not found", http.StatusNotFound)
+		return
+	}
+
+	u2 := r.URL
+	u2.Scheme = u.Scheme
+	u2.Host = u.Host
+
+	if strings.HasPrefix(u2.Path, "/wiki/") {
+		u2.Path = strings.Replace(u2.Path, "/wiki/", "/sreeki/", 1)
+		http.Redirect(w, r, u2.Path, http.StatusTemporaryRedirect)
+	}
+
+	if strings.HasPrefix(u2.Path, "/sreeki/") {
+		u2.Path = strings.Replace(u2.Path, "/sreeki/", "/wiki/", 1)
+	}
+
+	req, err := http.NewRequest(r.Method, u2.String(), r.Body)
+	if err != nil {
+		http.Error(w, "Error creating request", http.StatusInternalServerError)
+		slog.Error("Error creating request: %s", err)
+		return
+	}
+
 	client := &http.Client{}
 
-	handle := func(w http.ResponseWriter, r *http.Request) {
-		u2 := r.URL
-		u2.Scheme = u.Scheme
-		u2.Host = u.Host
-
-		req, err := http.NewRequest(r.Method, u2.String(), r.Body)
-		if err != nil {
-			http.Error(w, "Error creating request", http.StatusInternalServerError)
-			slog.Error("Error creating request: %s", err)
-			return
-		}
-
-		resp, err := client.Do(req)
-		if err != nil {
-			http.Error(w, "Error making request", http.StatusInternalServerError)
-			slog.Error("Error making request: %s", err)
-			return
-		}
-		defer resp.Body.Close()
-
-		for h, values := range resp.Header {
-			for _, v := range values {
-				w.Header().Add(h, v)
-			}
-		}
-
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			http.Error(w, "Error reading response", http.StatusInternalServerError)
-			slog.Error("Error reading response: %s", err)
-			return
-		}
-
-		if !strings.Contains(resp.Header.Get("Content-Type"), "text/html") {
-			w.WriteHeader(resp.StatusCode)
-			w.Write(body)
-			return
-		}
-
-		modifiedBody, err := s.sreeify.Sreeify(body)
-		if err != nil {
-			http.Error(w, "Error sreeifying response", http.StatusInternalServerError)
-			slog.Error("Error sreeifying response: %s", err)
-			return
-		}
-
-		w.WriteHeader(resp.StatusCode)
-		w.Write(modifiedBody)
+	resp, err := client.Do(req)
+	if err != nil {
+		http.Error(w, "Error making request", http.StatusInternalServerError)
+		slog.Error("Error making request: %s", err)
+		return
 	}
-	return handle
+	defer resp.Body.Close()
+
+	for h, values := range resp.Header {
+		for _, v := range values {
+			w.Header().Add(h, v)
+		}
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		http.Error(w, "Error reading response", http.StatusInternalServerError)
+		slog.Error("Error reading response: %s", err)
+		return
+	}
+
+	if !strings.Contains(resp.Header.Get("Content-Type"), "text/html") {
+		w.WriteHeader(resp.StatusCode)
+		w.Write(body)
+		return
+	}
+
+	modifiedBody, err := s.sreeify.Sreeify(body)
+	if err != nil {
+		http.Error(w, "Error sreeifying response", http.StatusInternalServerError)
+		slog.Error("Error sreeifying response: %s", err)
+		return
+	}
+
+	w.WriteHeader(resp.StatusCode)
+	w.Write(modifiedBody)
 }

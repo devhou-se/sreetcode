@@ -5,7 +5,7 @@ import gen.sreeify_pb2 as sreeify_pb2
 import gen.sreeify_pb2_grpc as sreeify_pb2_grpc
 from sreeify import sreeify_text
 
-CHUNK_SIZE = 2048  # 2KB
+CHUNK_SIZE = 1024 * 1024  # 1MB
 ENCODING = "utf-8"
 
 
