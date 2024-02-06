@@ -20,7 +20,8 @@ import (
 )
 
 const (
-	chunkSize = 1024 * 1024 // 1MB
+	chunkSize     = 1024 * 1024 // 1MB
+	pingFrequency = 15 * time.Second
 )
 
 type Client struct {
@@ -134,7 +135,7 @@ func (c *Client) createConnection() error {
 }
 
 func runPing(conn pb.SreeificationService_SreeifyClient) {
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(pingFrequency)
 
 	for {
 		select {
