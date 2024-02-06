@@ -24,6 +24,12 @@ var URLMappings = map[string]string{
 	"https://en.wiktionary.org/":    "/dict/",
 }
 
+var StaticFileOverrides = map[string]string{
+	"/static/images/mobile/copyright/sreekipedia-wordmark-en.svg": "sreekipedia.org/sreekipedia-wordmark-en.svg",
+	"/static/images/mobile/copyright/sreekipedia-tagline-en.svg":  "sreekipedia.org/tagling.svg",
+	"/static/favicon/sreekipedia.ico":                             "sreekipedia.org/sreeki.ico",
+}
+
 // Unsreefy reverses the replacements made by the Sreefy function, restoring the original words.
 func Unsreefy(input string) string {
 	// Replace each occurrence of the 'value' with its corresponding 'key'.

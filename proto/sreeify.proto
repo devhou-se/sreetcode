@@ -8,16 +8,27 @@ service SreeificationService {
     rpc Sreeify(stream Sreequest) returns (stream Sreesponse) {}
 }
 
-message Sreequest {
+message Payload {
     string id = 1;
     int32 part = 2;
     int32 total_parts = 3;
     bytes data = 4;
 }
 
+message Ping {
+    int64 time = 1;
+}
+
+message Sreequest {
+    oneof data {
+        Payload payload = 1;
+        Ping ping = 2;
+    }
+}
+
 message Sreesponse {
-    string id = 1;
-    int32 part = 2;
-    int32 total_parts = 3;
-    bytes data = 4;
+    oneof data {
+        Payload payload = 1;
+        Ping ping = 2;
+    }
 }

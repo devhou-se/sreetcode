@@ -14,7 +14,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rsreeify.proto\x12\x07sreeify\"d\n\tSreequest\x12\x0e\n\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n\x04part\x18\x02 \x01(\x05R\x04part\x12\x1f\n\x0btotal_parts\x18\x03 \x01(\x05R\ntotalParts\x12\x12\n\x04\x64\x61ta\x18\x04 \x01(\x0cR\x04\x64\x61ta\"e\n\nSreesponse\x12\x0e\n\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n\x04part\x18\x02 \x01(\x05R\x04part\x12\x1f\n\x0btotal_parts\x18\x03 \x01(\x05R\ntotalParts\x12\x12\n\x04\x64\x61ta\x18\x04 \x01(\x0cR\x04\x64\x61ta2P\n\x14SreeificationService\x12\x38\n\x07Sreeify\x12\x12.sreeify.Sreequest\x1a\x13.sreeify.Sreesponse\"\x00(\x01\x30\x01\x42\x81\x01\n\x0b\x63om.sreeifyB\x0cSreeifyProtoP\x01Z(github.com/devhou-se/sreetcode/proto/gen\xa2\x02\x03SXX\xaa\x02\x07Sreeify\xca\x02\x07Sreeify\xe2\x02\x13Sreeify\\GPBMetadata\xea\x02\x07Sreeifyb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rsreeify.proto\x12\x07sreeify\"b\n\x07Payload\x12\x0e\n\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n\x04part\x18\x02 \x01(\x05R\x04part\x12\x1f\n\x0btotal_parts\x18\x03 \x01(\x05R\ntotalParts\x12\x12\n\x04\x64\x61ta\x18\x04 \x01(\x0cR\x04\x64\x61ta\"\x1a\n\x04Ping\x12\x12\n\x04time\x18\x01 \x01(\x03R\x04time\"f\n\tSreequest\x12,\n\x07payload\x18\x01 \x01(\x0b\x32\x10.sreeify.PayloadH\x00R\x07payload\x12#\n\x04ping\x18\x02 \x01(\x0b\x32\r.sreeify.PingH\x00R\x04pingB\x06\n\x04\x64\x61ta\"g\n\nSreesponse\x12,\n\x07payload\x18\x01 \x01(\x0b\x32\x10.sreeify.PayloadH\x00R\x07payload\x12#\n\x04ping\x18\x02 \x01(\x0b\x32\r.sreeify.PingH\x00R\x04pingB\x06\n\x04\x64\x61ta2P\n\x14SreeificationService\x12\x38\n\x07Sreeify\x12\x12.sreeify.Sreequest\x1a\x13.sreeify.Sreesponse\"\x00(\x01\x30\x01\x42\x81\x01\n\x0b\x63om.sreeifyB\x0cSreeifyProtoP\x01Z(github.com/devhou-se/sreetcode/proto/gen\xa2\x02\x03SXX\xaa\x02\x07Sreeify\xca\x02\x07Sreeify\xe2\x02\x13Sreeify\\GPBMetadata\xea\x02\x07Sreeifyb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -22,10 +22,14 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'sreeify_pb2', _globals)
 if _descriptor._USE_C_DESCRIPTORS == False:
   _globals['DESCRIPTOR']._options = None
   _globals['DESCRIPTOR']._serialized_options = b'\n\013com.sreeifyB\014SreeifyProtoP\001Z(github.com/devhou-se/sreetcode/proto/gen\242\002\003SXX\252\002\007Sreeify\312\002\007Sreeify\342\002\023Sreeify\\GPBMetadata\352\002\007Sreeify'
-  _globals['_SREEQUEST']._serialized_start=26
-  _globals['_SREEQUEST']._serialized_end=126
-  _globals['_SREESPONSE']._serialized_start=128
-  _globals['_SREESPONSE']._serialized_end=229
-  _globals['_SREEIFICATIONSERVICE']._serialized_start=231
-  _globals['_SREEIFICATIONSERVICE']._serialized_end=311
+  _globals['_PAYLOAD']._serialized_start=26
+  _globals['_PAYLOAD']._serialized_end=124
+  _globals['_PING']._serialized_start=126
+  _globals['_PING']._serialized_end=152
+  _globals['_SREEQUEST']._serialized_start=154
+  _globals['_SREEQUEST']._serialized_end=256
+  _globals['_SREESPONSE']._serialized_start=258
+  _globals['_SREESPONSE']._serialized_end=361
+  _globals['_SREEIFICATIONSERVICE']._serialized_start=363
+  _globals['_SREEIFICATIONSERVICE']._serialized_end=443
 # @@protoc_insertion_point(module_scope)
