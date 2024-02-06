@@ -26,6 +26,8 @@ const (
 type Client struct {
 	client pb.SreeificationServiceClient
 	conn   pb.SreeificationService_SreeifyClient
+	//tc     trafficcontroller.Controller[string, *pb.Payload]
+	m map[string]chan []byte
 }
 
 func loadTLS() grpc.DialOption {
@@ -66,17 +68,18 @@ func NewClient(cfg config.Config) (*Client, error) {
 
 	c.client = pb.NewSreeificationServiceClient(conn)
 
-	return c, nil
-}
-
-func (c *Client) Sreeify(input []byte) ([]byte, error) {
-	ctx := context.Background()
-
-	conn, err := c.client.Sreeify(ctx)
+	time.Sleep(5 * time.Second)
+	err = c.createConnection()
 	if err != nil {
 		return nil, err
 	}
 
+	c.m = make(map[string]chan []byte)
+
+	return c, nil
+}
+
+func (c *Client) Sreeify(input []byte) ([]byte, error) {
 	rawId, err := uuid.NewUUID()
 	if err != nil {
 		return nil, err
@@ -85,26 +88,30 @@ func (c *Client) Sreeify(input []byte) ([]byte, error) {
 
 	// Chunk and send input
 	go func() {
-		chunks := chunk(input)
-		for i, c := range chunks {
-			err = conn.Send(&pb.Sreequest{
+		chunks := chunkData(input)
+		for i, chunk := range chunks {
+			payload := &pb.Payload{
 				Id:         id,
 				Part:       int32(i),
 				TotalParts: int32(len(chunks)),
-				Data:       c,
+				Data:       chunk,
+			}
+			err = c.conn.Send(&pb.Sreequest{
+				Data: &pb.Sreequest_Payload{
+					Payload: payload,
+				},
 			})
 			if err != nil {
 				slog.Error(fmt.Sprintf("Error sending chunk %d: %s", i, err))
 			}
 		}
-		err = conn.CloseSend()
 		if err != nil {
 			slog.Error(fmt.Sprintf("Error closing send: %s", err))
 		}
 	}()
 
 	// Blocking call to receive response
-	resp, err := receive(conn)
+	resp, err := c.receive(id)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +119,111 @@ func (c *Client) Sreeify(input []byte) ([]byte, error) {
 	return resp, nil
 }
 
-func chunk(b []byte) [][]byte {
+func (c *Client) createConnection() error {
+	ctx := context.Background()
+	conn, err := c.client.Sreeify(ctx)
+	if err != nil {
+		slog.Error(fmt.Sprintf("Error creating connection: %s", err))
+		return err
+	}
+	c.conn = conn
+
+	go runPing(conn)
+	go c.runReceiver(conn)
+	return nil
+}
+
+func runPing(conn pb.SreeificationService_SreeifyClient) {
+	ticker := time.NewTicker(5 * time.Second)
+
+	for {
+		select {
+		case <-ticker.C:
+			err := conn.Send(&pb.Sreequest{
+				Data: &pb.Sreequest_Ping{
+					Ping: &pb.Ping{
+						Time: time.Now().UnixMicro(),
+					},
+				},
+			})
+			if err != nil {
+				slog.Error(fmt.Sprintf("Error sending ping: %s", err))
+			}
+		}
+	}
+}
+
+func (c *Client) runReceiver(conn pb.SreeificationService_SreeifyClient) {
+	cc := make(chan *pb.Payload)
+	go c.collect(cc)
+
+	for {
+		resp, err := conn.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			slog.Error(fmt.Sprintf("error receiving message: %+v", err))
+			return
+		}
+
+		data := resp.GetData()
+		switch x := data.(type) {
+		case *pb.Sreesponse_Ping:
+			handlePing(x)
+		case *pb.Sreesponse_Payload:
+			cc <- x.Payload
+		}
+	}
+}
+
+func (c *Client) collect(cc <-chan *pb.Payload) {
+	data := make(map[string][][]byte)
+
+	f := func(b []byte) bool {
+		return b != nil
+	}
+
+	for payload := range cc {
+		id := payload.GetId()
+		if _, ok := data[id]; !ok {
+			data[id] = make([][]byte, payload.TotalParts)
+		}
+		data[id][payload.GetPart()] = payload.GetData()
+
+		if all(data[id], f) {
+			b := flatten(data[id])
+			co := c.m[id]
+			co <- b
+		}
+	}
+}
+
+func flatten(bs [][]byte) []byte {
+	var b []byte
+	for _, b2 := range bs {
+		b = append(b, b2...)
+	}
+	return b
+}
+
+func all(i [][]byte, f func([]byte) bool) bool {
+	for _, x := range i {
+		if !f(x) {
+			return false
+		}
+	}
+	return true
+}
+
+func (c *Client) receive(id string) ([]byte, error) {
+	pc := make(chan []byte)
+	c.m[id] = pc
+	data := <-pc
+	return data, nil
+}
+
+func chunkData(b []byte) [][]byte {
 	var bs [][]byte
 	for i := 0; i < len(b); i += chunkSize {
 		end := i + chunkSize
@@ -124,31 +235,10 @@ func chunk(b []byte) [][]byte {
 	return bs
 }
 
-func receive(conn pb.SreeificationService_SreeifyClient) ([]byte, error) {
-	var bs [][]byte
-	received := 0
-	for {
-		resp, err := conn.Recv()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return nil, err
-		}
-		if int32(len(bs)) != resp.TotalParts {
-			bs2 := make([][]byte, resp.TotalParts)
-			copy(bs2, bs)
-			bs = bs2
-		}
-
-		bs[resp.Part] = resp.Data
-		received++
-	}
-
-	var b []byte
-	for _, part := range bs {
-		b = append(b, part...)
-	}
-
-	return b, nil
+func handlePing(ping *pb.Sreesponse_Ping) {
+	end := time.Now()
+	ts := ping.Ping.Time
+	start := time.UnixMicro(ts)
+	delta := end.Sub(start)
+	slog.Info(fmt.Sprintf("ping took %s", delta))
 }
