@@ -229,6 +229,7 @@ func (s *Server) newRouter(f func(string) (*url.URL, bool)) *chi.Mux {
 		"/static/images/mobile/copyright/sreekipedia-wordmark-en.svg": "sreekipedia.org/sreekipedia-wordmark-en.svg",
 		"/static/images/mobile/copyright/sreekipedia-tagline-en.svg":  "sreekipedia.org/tagling.svg",
 		"/static/favicon/sreekipedia.ico":                             "sreekipedia.org/sreeki.ico",
+		"/robots.txt":                                                 "sreekipedia.org/robots.txt",
 	}
 	for requestedAsset, replacementAsset := range mappings {
 		router.HandleFunc(requestedAsset, ReplacedAssetHandler(replacementAsset))
