@@ -55,7 +55,7 @@ func (s *Server) httpServer(cfg config.Config) (*http.Server, error) {
 // router creates a new router with middleware and routes
 func (s *Server) router(cfg config.Config) (*chi.Mux, error) {
 	r := chi.NewRouter()
-	r.Use(middlewareFunc, timerFunc)
+	r.Use(blockAgents, middlewareFunc, timerFunc)
 
 	// Set up routes for specific assets to be replaced.
 	for requestedAsset, replacementAsset := range util.StaticFileOverrides {

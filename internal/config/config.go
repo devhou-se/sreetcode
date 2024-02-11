@@ -18,7 +18,7 @@ type Config struct {
 func envOrDefault(key, def string) string {
 	v := os.Getenv(key)
 	if v == "" {
-		slog.Info(fmt.Sprintf("Using default value for %s: %s\n", key, def))
+		slog.Info(fmt.Sprintf("Using default value for %s: %s", key, def))
 		v = def
 	}
 	return v
