@@ -164,3 +164,176 @@ func (s *Server) proxyHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(resp.StatusCode)
 	w.Write(modifiedBody)
 }
+
+// ProxyHandler returns an HTTP handler function that proxies requests.
+func (s *Server) ProxyHandler(client *http.Client, u *url.URL) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		s.proxyRequest(client, u, w, r)
+	}
+}
+
+// ReplacedAssetHandler handles serving replaced assets from a specified location.
+func ReplacedAssetHandler(assetLocation string) http.HandlerFunc {
+	ctx := context.Background()
+
+	// Create a new Cloud Storage client.
+	sc, err := storage.NewClient(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Get the object from the bucket.
+		o := sc.Bucket("static.xbd.au").Object(assetLocation)
+
+		// Read the object's content.
+		rc, err := o.NewReader(ctx)
+		if err != nil {
+			http.Error(w, "Error reading object", http.StatusInternalServerError)
+			return
+		}
+		defer rc.Close()
+
+		// Get the object's attributes and set the appropriate headers.
+		a, err := o.Attrs(ctx)
+		if err != nil {
+			http.Error(w, "Error getting object attributes", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Add("Content-Type", a.ContentType)
+		w.Header().Add("Cache-Control", "public, max-age=86400")
+
+		// Copy the object's content to the response writer.
+		if _, err := io.Copy(w, rc); err != nil {
+			http.Error(w, "Error writing response", http.StatusInternalServerError)
+		}
+	}
+}
+
+// middlewareFunc is a middleware function that logs the request.
+func middlewareFunc(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("%s %s\n", r.Method, r.URL)
+		next.ServeHTTP(w, r)
+	})
+}
+
+// timerFunc is a middleware function that times processing of the request.
+func timerFunc(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		next.ServeHTTP(w, r)
+		log.Printf("Request took %s\n", time.Now().Sub(start))
+	})
+}
+
+// sreekiMapper is a URL mapper that maps sreekipedia.org URLs to wikipedia.org URLs.
+func sreekiMapper(h string) (*url.URL, bool) {
+	slog.Info(fmt.Sprintf("sreekiMapper: %s", h))
+
+	if h == "" {
+		return nil, false
+	}
+
+	if strings.HasPrefix(h, "localhost") {
+		h = "en.sreekipedia.org"
+	}
+
+	d := fmt.Sprintf("https://%s", h)
+	parts := strings.Split(d, ".")
+	if len(parts) < 2 {
+		return nil, false
+	}
+
+	np := len(parts)
+	if !(parts[np-2] == "sreekipedia" && parts[np-1] == "org") {
+		return nil, false
+	}
+
+	parts[np-2] = "wikipedia"
+
+	up := strings.Join(parts, ".")
+	u2, err := url.Parse(up)
+	if err != nil {
+		return nil, false
+	}
+
+	return u2, true
+}
+
+func (s *Server) newRouter(f func(string) (*url.URL, bool)) *chi.Mux {
+	router := chi.NewRouter()
+
+	router.Use(middlewareFunc, timerFunc)
+
+	httpClient := &http.Client{}
+
+	for original, replaced := range util.URLMappings {
+		originalUrl, _ := url.Parse(original)
+		router.Handle(fmt.Sprintf("%s*", replaced), http.StripPrefix(replaced, s.ProxyHandler(httpClient, originalUrl)))
+	}
+
+	router.HandleFunc("/news/*", func(w http.ResponseWriter, r *http.Request) {
+		newsUrl, _ := url.Parse("https://en.wikinews.org/")
+		http.StripPrefix("/news/", s.ProxyHandler(httpClient, newsUrl)).ServeHTTP(w, r)
+	})
+
+	// Set up routes for specific assets to be replaced.
+	mappings := map[string]string{
+		"/static/images/mobile/copyright/sreekipedia-wordmark-en.svg": "sreekipedia.org/sreekipedia-wordmark-en.svg",
+		"/static/images/mobile/copyright/sreekipedia-tagline-en.svg":  "sreekipedia.org/tagling.svg",
+		"/static/favicon/sreekipedia.ico":                             "sreekipedia.org/sreeki.ico",
+		"/robots.txt":                                                 "sreekipedia.org/robots.txt",
+	}
+	for requestedAsset, replacementAsset := range mappings {
+		router.HandleFunc(requestedAsset, ReplacedAssetHandler(replacementAsset))
+	}
+
+	handlers := map[string]http.HandlerFunc{}
+
+	// Handle all other requests with the proxy.
+	router.HandleFunc("/*", func(w http.ResponseWriter, r *http.Request) {
+		u, ok := f(r.Host)
+		if !ok {
+			http.Error(w, "Not found", http.StatusNotFound)
+			return
+		}
+
+		handler, ok := handlers[u.String()]
+		if !ok {
+			handler = s.ProxyHandler(httpClient, u)
+			handlers[u.String()] = handler
+		}
+
+		handler.ServeHTTP(w, r)
+	})
+
+	return router
+}
+
+// NewWebServer initializes a new web server with predefined routes and handlers.
+func NewWebServer(cfg config.Config) (*Server, error) {
+	s := &Server{
+		Server: &http.Server{},
+	}
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	m := urlMapper(sreekiMapper)
+	router := s.newRouter(m)
+
+	s.Server.Addr = ":" + port
+	s.Server.Handler = router
+
+	sreeify, err := sreeify.NewClient(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	s.sreeify = sreeify
+
+	return s, nil
+}
