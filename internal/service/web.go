@@ -173,6 +173,8 @@ func blockAgents(next http.Handler) http.Handler {
 				return
 			}
 		}
+		// temp
+		slog.Info(fmt.Sprintf("allowed user agent: %s", r.UserAgent()))
 		next.ServeHTTP(w, r)
 	})
 }
