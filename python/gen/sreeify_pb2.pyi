@@ -15,7 +15,7 @@ else:
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 
 @typing_extensions.final
-class Sreequest(google.protobuf.message.Message):
+class Payload(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     ID_FIELD_NUMBER: builtins.int
@@ -35,6 +35,43 @@ class Sreequest(google.protobuf.message.Message):
         data: builtins.bytes = ...,
     ) -> None: ...
     def ClearField(self, field_name: typing_extensions.Literal["data", b"data", "id", b"id", "part", b"part", "total_parts", b"total_parts"]) -> None: ...
+
+global___Payload = Payload
+
+@typing_extensions.final
+class Ping(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    TIME_FIELD_NUMBER: builtins.int
+    time: builtins.int
+    def __init__(
+        self,
+        *,
+        time: builtins.int = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["time", b"time"]) -> None: ...
+
+global___Ping = Ping
+
+@typing_extensions.final
+class Sreequest(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    PAYLOAD_FIELD_NUMBER: builtins.int
+    PING_FIELD_NUMBER: builtins.int
+    @property
+    def payload(self) -> global___Payload: ...
+    @property
+    def ping(self) -> global___Ping: ...
+    def __init__(
+        self,
+        *,
+        payload: global___Payload | None = ...,
+        ping: global___Ping | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["data", b"data", "payload", b"payload", "ping", b"ping"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["data", b"data", "payload", b"payload", "ping", b"ping"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["data", b"data"]) -> typing_extensions.Literal["payload", "ping"] | None: ...
 
 global___Sreequest = Sreequest
 
@@ -42,22 +79,20 @@ global___Sreequest = Sreequest
 class Sreesponse(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
-    ID_FIELD_NUMBER: builtins.int
-    PART_FIELD_NUMBER: builtins.int
-    TOTAL_PARTS_FIELD_NUMBER: builtins.int
-    DATA_FIELD_NUMBER: builtins.int
-    id: builtins.str
-    part: builtins.int
-    total_parts: builtins.int
-    data: builtins.bytes
+    PAYLOAD_FIELD_NUMBER: builtins.int
+    PING_FIELD_NUMBER: builtins.int
+    @property
+    def payload(self) -> global___Payload: ...
+    @property
+    def ping(self) -> global___Ping: ...
     def __init__(
         self,
         *,
-        id: builtins.str = ...,
-        part: builtins.int = ...,
-        total_parts: builtins.int = ...,
-        data: builtins.bytes = ...,
+        payload: global___Payload | None = ...,
+        ping: global___Ping | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["data", b"data", "id", b"id", "part", b"part", "total_parts", b"total_parts"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["data", b"data", "payload", b"payload", "ping", b"ping"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["data", b"data", "payload", b"payload", "ping", b"ping"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["data", b"data"]) -> typing_extensions.Literal["payload", "ping"] | None: ...
 
 global___Sreesponse = Sreesponse

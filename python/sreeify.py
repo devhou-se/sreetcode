@@ -61,8 +61,9 @@ def split_n_join(m: callable, s: str) -> str:
 
 def sreeify_text_lxml(payload: str) -> str:
     def replace_links(s: str) -> str:
-        # for link in link_replacements:
-        #     s = s.replace(link.original_base_uri, link.replacement_base_uri)
+        if s.startswith("/wiki/"):
+            s = "/sreeki/" + s[6:]
+
         return s
 
     tree = html.fromstring(payload)
